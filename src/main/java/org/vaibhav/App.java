@@ -9,13 +9,13 @@ public class App {
   private static boolean firstTime = true;
 
   private static void runWorkload(String endpoint) throws Exception {
-    String ybUrl = "jdbc:postgresql://" + endpoint + ":5433/yugabyte?" +
+    String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
       "user=yugabyte&password=yugabyte&load-balance=true";
     Connection conn = DriverManager.getConnection(ybUrl);
     Statement st = conn.createStatement();
     // set up the table if it doesn't exist
     boolean res = st.execute("create table if not exists test_cdc_app (id int primary key, " +
-      "name text default 'Vaibhav');");
+      "name text default 'Vaibhav') split into 1 tablets;");
     if (!res && firstTime) {
       // this means that the table is created
       System.out.println("Table created for the first time, waiting for 40s to let the " +
