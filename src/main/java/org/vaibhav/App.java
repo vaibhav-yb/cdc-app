@@ -72,7 +72,8 @@ public class App {
       try {
         runWorkload(args[index]);
       } catch (Exception e) {
-        System.out.println("Exception caught, trying again...");
+        System.out.println("Exception caught: " + e);
+        System.out.println("Trying again...");
         ++index;
         if (index >= args.length) {
           index = 0;
