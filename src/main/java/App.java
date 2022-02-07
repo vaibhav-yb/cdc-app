@@ -33,6 +33,8 @@ public class App {
           throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
         }
       }
+      System.out.println("Insertion of 1000 rows complete...");
+      Thread.sleep(1000);
 
       // update the inserted rows
       for (int i = 1; i <= 1000; ++i) {
@@ -41,11 +43,15 @@ public class App {
           throw new RuntimeException("Unable to update rows, throwing exception and starting from scratch...");
         }
       }
+      System.out.println("Updation of 1000 rows complete...");
+      Thread.sleep(1000);
 
       // delete the inserted rows
       for (int i = 1; i <= 1000; ++i) {
         st.executeUpdate("delete from test_cdc_app where id = " + i + ";");
       }
+      System.out.println("Deletion of 1000 rows complete...");
+      Thread.sleep(1000);
 
       ++iterations;
       System.out.println("Iteration count: " + iterations);
