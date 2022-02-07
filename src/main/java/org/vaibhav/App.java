@@ -9,8 +9,8 @@ public class App {
   private static boolean firstTime = true;
 
   private static void runWorkload(String endpoint) throws Exception {
-    String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
-      "user=yugabyte&password=yugabyte&load-balance=true";
+    String ybUrl = "jdbc:postgresql://" + endpoint + ":5433/yugabyte?" +
+      "user=yugabyte&password=yugabyte";
     Connection conn = DriverManager.getConnection(ybUrl);
     Statement st = conn.createStatement();
     // set up the table if it doesn't exist
