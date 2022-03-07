@@ -65,7 +65,7 @@ public class App {
           ex.printStackTrace();
         }
         insertCompleted = true;
-        counter = 0;
+        counter = 1;
         Thread.sleep(300);
       }
 
@@ -98,7 +98,7 @@ public class App {
           ex.printStackTrace();
         }
         updateCompleted = true;
-        counter = 0;
+        counter = 1;
         Thread.sleep(300);
       }
 
@@ -127,7 +127,7 @@ public class App {
           ex.printStackTrace();
         }
         deleteCompleted = true;
-        counter = 0;
+        counter = 1;
         Thread.sleep(300);
       }
 
@@ -138,7 +138,7 @@ public class App {
       insertCompleted = false;
       updateCompleted = false;
       deleteCompleted = false;
-      counter = 0;
+      counter = 1;
     }
   }
 
