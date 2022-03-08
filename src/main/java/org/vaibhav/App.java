@@ -11,10 +11,9 @@ public class App {
   private static boolean updateCompleted = false;
   private static boolean deleteCompleted = false;
 
-  private static void runWorkload(String endpoint, String postgresIp) throws Exception {
+  private static void runWorkload(String endpoint) throws Exception {
     String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
       "user=yugabyte&password=yugabyte";
-    String pgUrl = "jdbc:postgresql://" + postgresIp + ":5432/postgres?user=postgres&password=postgres&sslMode=require";
     Connection conn = DriverManager.getConnection(ybUrl);
     Statement st = conn.createStatement();
     // set up the table if it doesn't exist
@@ -33,7 +32,7 @@ public class App {
     // make sure the table doesn't contain anything
     st.execute("delete from test_cdc_app;");
 
-    long numOfRows = 1000;
+    long numOfRows = 10000;
 
     while(true) {
       if (!insertCompleted) {
@@ -47,23 +46,7 @@ public class App {
         System.out.println("Insertion of " + numOfRows + " rows complete...");
 
         System.out.println("Waiting for 1 s for Postgres to get all the data...");
-        Thread.sleep(1200);
-        // Now verify data in postgres. Since we have inserted 10000 rows, the count should be the same
-        try (Connection insertConn = DriverManager.getConnection(pgUrl)) {
-          ResultSet rs = insertConn.createStatement().executeQuery("select count(*) from sink;");
-          if (rs.next()) {
-            int countInResult = rs.getInt(1);
-            if (countInResult == numOfRows) {
-              System.out.println("Count in PG verified to be " + countInResult);
-            }
-            else {
-              System.out.println("Count in PG not equal, PG = " + countInResult + " , YB = " + numOfRows);
-            }
-          }
-        }
-        catch (SQLException ex) {
-          ex.printStackTrace();
-        }
+
         insertCompleted = true;
         counter = 1;
         Thread.sleep(300);
@@ -80,23 +63,7 @@ public class App {
         System.out.println("Updation of " + numOfRows + " rows complete...");
 
         System.out.println("Waiting for 1 s for Postgres to get all the data...");
-        Thread.sleep(1200);
-        // Now verify data in postgres. All the updated rows should have the name value equal to 'VKVK'
-        try (Connection newConn = DriverManager.getConnection(pgUrl)) {
-          ResultSet rsUpdate = newConn.createStatement().executeQuery("select count(*) from sink where name = 'VKVK';");
-          if (rsUpdate.next()) {
-            int countInResult = rsUpdate.getInt(1);
-            if (countInResult == numOfRows) {
-              System.out.println("Update count in PG verified to be " + countInResult);
-            }
-            else {
-              System.out.println("Update count in PG not equal, PG = " + countInResult + " , YB = " + numOfRows);
-            }
-          }
-        }
-        catch (SQLException ex) {
-          ex.printStackTrace();
-        }
+
         updateCompleted = true;
         counter = 1;
         Thread.sleep(300);
@@ -110,22 +77,7 @@ public class App {
         System.out.println("Deletion of " + numOfRows + " rows complete...");
 
         System.out.println("Waiting for 1 s for Postgres to get all the data...");
-        Thread.sleep(1200);
-        try (Connection deleteConn = DriverManager.getConnection(pgUrl)) {
-          ResultSet rsDelete = deleteConn.createStatement().executeQuery("select count(*) from sink;");
-          if (rsDelete.next()) {
-            int countInResult = rsDelete.getInt(1);
-            if (countInResult == 0) {
-              System.out.println("Delete count in PG verified to be zero.");
-            }
-            else {
-              System.out.println("Rows left after deletion (result of select count(*) on postgres): " + countInResult);
-            }
-          }
-        }
-        catch (SQLException ex) {
-          ex.printStackTrace();
-        }
+
         deleteCompleted = true;
         counter = 1;
         Thread.sleep(300);
@@ -152,13 +104,12 @@ public class App {
     int index = 0;
     while (true) {
       try {
-        // The last index will always refer to the IP where postgres is running.
-        runWorkload(args[index], args[args.length - 1]);
+        runWorkload(args[index]);
       } catch (Exception e) {
         System.out.println("Exception caught: " + e);
         System.out.println("Trying again...");
         ++index;
-        if (index >= args.length - 1) {
+        if (index >= args.length) {
           index = 0;
         }
       }
