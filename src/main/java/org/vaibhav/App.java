@@ -27,7 +27,7 @@ public class App {
     }
 
     // make sure the table doesn't contain anything
-    st.execute("delete from test_cdc_app;");
+    st.execute("delete from test;");
 
     long numOfRows = -1;
 
