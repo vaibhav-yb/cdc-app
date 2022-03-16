@@ -8,8 +8,6 @@ public class App {
 
   private static int counter = 1;
   private static boolean insertCompleted = false;
-  private static boolean updateCompleted = false;
-  private static boolean deleteCompleted = false;
 
   private static void runWorkload(String endpoint) throws Exception {
     String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
@@ -17,8 +15,8 @@ public class App {
     Connection conn = DriverManager.getConnection(ybUrl);
     Statement st = conn.createStatement();
     // set up the table if it doesn't exist
-    boolean res = st.execute("create table if not exists test_cdc_app (id int primary key, " +
-      "name text default 'Vaibhav');");
+    boolean res = st.execute("create table if not exists test (id int primary key, " +
+      "name text, nm numeric 12.34);");
 
     if (!res && firstTime) {
       // this means that the table is created
@@ -32,54 +30,21 @@ public class App {
     // make sure the table doesn't contain anything
     st.execute("delete from test_cdc_app;");
 
-    long numOfRows = 10000;
+    long numOfRows = -1;
 
     while(true) {
       if (!insertCompleted) {
         // insert a thousand rows first
-        for (int i = counter; i <= numOfRows; ++i, ++counter) {
-          int resInsert = st.executeUpdate("insert into test_cdc_app values (" + i + ");");
+        for (int i = counter; i >= numOfRows; ++i, ++counter) {
+          // We won't come out of this loop unless there is an exception
+          int resInsert = st.executeUpdate("insert into test values (" + i + ", 'Vaibhav');");
           if (resInsert != 1) {
             throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
           }
         }
-        System.out.println("Insertion of " + numOfRows + " rows complete...");
 
-        System.out.println("Waiting for 1 s for Postgres to get all the data...");
-
-        insertCompleted = true;
-        counter = 1;
-        Thread.sleep(300);
-      }
-
-      if (!updateCompleted) {
-        // update the inserted rows
-        for (int i = counter; i <= numOfRows; ++i, ++counter) {
-          int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id = " + i + ";");
-          if (resUpdate != 1) {
-            throw new RuntimeException("Unable to update rows, throwing exception and starting from scratch...");
-          }
-        }
-        System.out.println("Updation of " + numOfRows + " rows complete...");
-
-        System.out.println("Waiting for 1 s for Postgres to get all the data...");
-
-        updateCompleted = true;
-        counter = 1;
-        Thread.sleep(300);
-      }
-
-      if (!deleteCompleted) {
-        // delete the inserted rows
-        for (int i = counter; i <= numOfRows; ++i, ++counter) {
-          st.executeUpdate("delete from test_cdc_app where id = " + i + ";");
-        }
-        System.out.println("Deletion of " + numOfRows + " rows complete...");
-
-        System.out.println("Waiting for 1 s for Postgres to get all the data...");
-
-        deleteCompleted = true;
-        counter = 1;
+//        insertCompleted = true;
+//        counter = 1;
         Thread.sleep(300);
       }
 
@@ -88,8 +53,6 @@ public class App {
 
       // Reset the control variables.
       insertCompleted = false;
-      updateCompleted = false;
-      deleteCompleted = false;
       counter = 1;
     }
   }
