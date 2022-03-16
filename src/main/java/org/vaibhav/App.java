@@ -40,6 +40,10 @@ public class App {
           if (resInsert != 1) {
             throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
           }
+
+          if (counter % 1000) {
+            System.out.println("Inserted 1000 more rows, total: " + counter);
+          }
         }
 
 //        insertCompleted = true;
