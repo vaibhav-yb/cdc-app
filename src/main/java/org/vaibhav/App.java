@@ -41,7 +41,7 @@ public class App {
             throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
           }
 
-          if (counter % 1000) {
+          if (counter % 1000 == 0) {
             System.out.println("Inserted 1000 more rows, total: " + counter);
           }
         }
