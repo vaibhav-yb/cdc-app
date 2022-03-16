@@ -16,7 +16,7 @@ public class App {
     Statement st = conn.createStatement();
     // set up the table if it doesn't exist
     boolean res = st.execute("create table if not exists test (id int primary key, " +
-      "name text, nm numeric 12.34);");
+      "name text, nm numeric default 12.34);");
 
     if (!res && firstTime) {
       // this means that the table is created
