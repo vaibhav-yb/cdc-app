@@ -23,7 +23,6 @@ public class App {
       System.out.println("Table created for the first time, waiting for 40s to let the " +
         "deployment happen");
       firstTime = false;
-      System.out.println("Will verify the rows in Postgres too here...");
       Thread.sleep(40000);
     }
 
