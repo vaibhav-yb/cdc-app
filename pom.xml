@@ -21,12 +21,17 @@
       <dependency>
           <groupId>com.yugabyte</groupId>
           <artifactId>jdbc-yugabytedb</artifactId>
-          <version>42.3.0-beta.1</version>
+          <version>42.3.0</version>
       </dependency>
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>42.2.14</version>
+    </dependency>
+    <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+      <version>3.4.5</version>
     </dependency>
   </dependencies>
 
