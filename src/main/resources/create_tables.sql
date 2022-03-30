@@ -106,3 +106,54 @@ CREATE TABLE api_db_domestic.api_user_partner_transaction_log
   transactiontype       bigint,
   userid                bigint
 ) split into 40 tablets;
+
+DROP TABLE IF EXISTS api_db_domestic.api_user_device CASCADE;
+CREATE TABLE api_db_domestic.api_user_device
+(
+  id                bigint not null,
+  activationcode    varchar(255),
+  createddate       timestamptz,
+  devicedescription varchar(255),
+  deviceid          varchar(255),
+  devicetoken       varchar(255),
+  ipaddress         varchar(255),
+  partner           varchar(255),
+  lastupdate        timestamptz,
+  status            bigint,
+  userid            bigint,
+  encryption_level  bigint,
+  isdeleted         boolean
+) split into 40 tablets;
+
+DROP TABLE IF EXISTS api_db_domestic.api_watch_list CASCADE;
+CREATE TABLE api_db_domestic.api_watch_list
+(
+  id                      bigint not null,
+  userid                  bigint not null default '0',
+  profileid               bigint not null default '0',
+  externalid              varchar(255) not null,
+  watchlistexternalidtype varchar(255),
+  createddate             timestamptz,
+  updateddate             timestamptz
+) split into 40 tablets;
+
+DROP TABLE IF EXISTS api_db_domestic.user_attribute CASCADE;
+CREATE TABLE api_db_domestic.user_attribute
+(
+  userid                              bigint not null,
+  lastshareddate                      timestamptz,
+  optin                               boolean,
+  opt_in_updated_date                 timestamptz,
+  sharestatus                         char(1),
+  termsofusedate                      date,
+  termsofuseversion                   varchar(255),
+  userstatus                          bigint,
+  verifiedemail                       boolean,
+  parental_control_pin                varchar(10),
+  parental_control_restriction_level  varchar(100),
+  parental_control_livetv_pin_enabled boolean,
+  createddate                         timestamptz,
+  updateddate                         timestamptz,
+  nfloptin                            boolean,
+  nfloptindate                        timestamptz
+) split into 40 tablets;

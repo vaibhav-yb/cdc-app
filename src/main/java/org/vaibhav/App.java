@@ -85,6 +85,22 @@ public class App {
         Future f6_2 = executorService.submit(new ApiUserPartnerTransactionLog(args, TEN_MILLION, 2*TEN_MILLION));
         Future f6_3 = executorService.submit(new ApiUserPartnerTransactionLog(args, 2*TEN_MILLION, 3*TEN_MILLION));
 
+        Future f7_1 = executorService.submit(new ApiUserDevice(args, 1, TEN_MILLION));
+        Future f7_2 = executorService.submit(new ApiUserDevice(args, TEN_MILLION, 2*TEN_MILLION));
+        Future f7_3 = executorService.submit(new ApiUserDevice(args, 2*TEN_MILLION, 3*TEN_MILLION));
+
+        Future f8_1 = executorService.submit(new ApiWatchList(args, 1, TEN_MILLION));
+        Future f8_2 = executorService.submit(new ApiWatchList(args, TEN_MILLION, 2*TEN_MILLION));
+        Future f8_3 = executorService.submit(new ApiWatchList(args, 2*TEN_MILLION, 3*TEN_MILLION));
+
+        Future f9_1 = executorService.submit(new ApiWatchList(args, 1, TEN_MILLION));
+        Future f9_2 = executorService.submit(new ApiWatchList(args, TEN_MILLION, 2*TEN_MILLION));
+        Future f9_3 = executorService.submit(new ApiWatchList(args, 2*TEN_MILLION, 3*TEN_MILLION));
+
+        Future f10_1 = executorService.submit(new ApiWatchList(args, 1, TEN_MILLION));
+        Future f10_2 = executorService.submit(new ApiWatchList(args, TEN_MILLION, 2*TEN_MILLION));
+        Future f10_3 = executorService.submit(new ApiWatchList(args, 2*TEN_MILLION, 3*TEN_MILLION));
+
         f1_1.get();
         f1_2.get();
         f1_3.get();
@@ -108,6 +124,22 @@ public class App {
         f6_1.get();
         f6_2.get();
         f6_3.get();
+
+        f7_1.get();
+        f7_2.get();
+        f7_3.get();
+
+        f8_1.get();
+        f8_2.get();
+        f8_3.get();
+
+        f9_1.get();
+        f9_2.get();
+        f9_3.get();
+
+        f10_1.get();
+        f10_2.get();
+        f10_3.get();
       } catch (Exception e) {
         System.out.println("Exception thrown in main application...");
       }

@@ -27,4 +27,21 @@ public class UtilStrings {
     public static String apiUserPartnerTransactionLog = "insert into api_db_domestic.api_user_partner_transaction_log (id, isoriginalpurchase, json,"
             + "originaltransactionid, partner, transactionid, transactiontype, userid) values (%d, false, '[{},{},{},{},{}]', '8a85eed2-acf5-49b3-bb41-18a06d2dbd4a', "
             + "'Kayveo', '3db4d92b-920b-4f82-a50c-a656993cf02d', 444, 479818);";
+
+    public static String apiUserDevice = "insert into api_db_domestic.api_user_device (id, activationcode, createddate, devicedescription, deviceid, devicetoken,"
+            + "ipaddress, partner, lastupdate, status, userid, encryption_level, isdeleted) values (%d, 'activationCode2', '2012-06-29T01:45:58Z', 'Damaliscus dorcas',"
+            + " '56062-535', 'c6687952-46c1-4669-9817-1a0c605206d3', '56.149.207.111', 'partner3', '2021-07-22T20:12:29Z', 80, 8590, 6, false);";
+
+    public static String apiWatchList = "insert into api_db_domestic.api_watch_list (id, userid, profileid, externalid, watchlistexternalidtype, createddate, "
+            + "updateddate) values (%d, 402136, 913657, '7f985532-4f86-43d7-99b4-fbb2bd3c3609', 'fa7cf363-8e0a-454a-a39c-3e1df3633c47', '2020-10-03T07:35:35Z', "
+            + "'2013-04-29T08:36:50Z');";
+
+    public static String userAttribute = "insert into api_db_domestic.user_attribute (userid, lastshareddate, optin, opt_in_updated_date, sharestatus, termsofusedate, "
+            + "termsofuseversion, userstatus, verifiedemail, parental_control_pin, parental_control_restriction_level, parental_control_livetv_pin_enabled, "
+            + "createddate, updateddate, nfloptin, nfloptindate) values (%d, '2010-05-07T11:56:34Z', true, '2011-04-25T20:34:21Z', 'd', '2016/05/17', '8.3.4', 34, "
+            + "false, '076', '708', true, '2015-02-24T07:22:34Z', '2016-11-29T14:30:54Z', true, '2019-09-07T13:47:37Z');";
+
+    public static String userProfile = "insert into api_db_domestic.user_profile (id, userid, ismasterprofile, profiletype, orderid, name, locale, profilepic, "
+            + "createdby, createddate, updatedby, updateddate, isdeleted) values (%d, 928732, 42, 'application/pdf', 4645, 'Jaymie Bullick', null, 'http://dummyimage"
+            + ".com/213x100.png/ff4444/ffffff', 33956, '2018-10-15T12:10:21Z', 18315, '2018-03-14T02:22:03Z', false);";
 }
