@@ -1,11 +1,13 @@
-package org.vaibhav;
+package org.vaibhav.tables;
+
+import org.vaibhav.UtilStrings;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class ApiSubAppleOrigTransactions implements Runnable {
+public class ApiOauthAccessToken implements Runnable {
     long i;
     int idx = 0;
 
@@ -13,13 +15,13 @@ public class ApiSubAppleOrigTransactions implements Runnable {
     private Connection conn;
     private Statement st;
 
-    long min;
-    long max;
+    private long min;
+    private long max;
 
-    ApiSubAppleOrigTransactions(String[] endpointArray, long min, long max) {
+    public ApiOauthAccessToken(String[] endpointArray, long min, long max) {
         this.endpoint = endpointArray;
-        this.i = min;
         this.min = min;
+        this.i = min;
         this.max = max;
     }
 
@@ -32,19 +34,18 @@ public class ApiSubAppleOrigTransactions implements Runnable {
             System.out.println("Exeption while creating connection: " + se);
             return;
         }
-        while (true) {
+        while (i < max) {
             try {
                 // Insert in loop here
                 for (; i > 0; ++i) {
-                    st.executeUpdate(String.format(UtilStrings.apiSubAppleOrigTransactions, i));
+                    st.executeUpdate(String.format(UtilStrings.apiOauthAccessToken, i));
                     if (i % 1000 == 0) {
-                        System.out.println("Total rows written to api_sub_apple_orig_transactions --> " + i);
+                        System.out.println("Total rows written to api_oauth_access_token --> " + i);
                     }
                 }
             }
             catch (Exception e) {
-                System.out.println("Exception thrown in thread (" + endpoint[idx] + "): " + ApiSubAppleOrigTransactions.class.getName() + " --> " + e);
-
+                System.out.println("Exception thrown in thread (" + endpoint[idx] + "): " + ApiOauthAccessToken.class.getName() + " --> " + e);
                 ++idx;
                 if (idx >= endpoint.length) {
                     idx = 0;

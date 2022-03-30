@@ -1,25 +1,28 @@
-package org.vaibhav;
+package org.vaibhav.tables;
+
+import org.vaibhav.UtilStrings;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class ApiOauthAccessToken implements Runnable {
+public class ApiSubUserPackages implements Runnable {
     long i;
     int idx = 0;
 
-    String[] endpoint;
+    private String[] endpoint;
     private Connection conn;
     private Statement st;
+    //int multiplier = 1;
 
     private long min;
-    private long max;
+    private long max; // max will be excluded from being inserted;
 
-    ApiOauthAccessToken(String[] endpointArray, long min, long max) {
+    public ApiSubUserPackages(String[] endpointArray, long min, long max) {
         this.endpoint = endpointArray;
-        this.min = min;
         this.i = min;
+        this.min = min;
         this.max = max;
     }
 
@@ -32,18 +35,23 @@ public class ApiOauthAccessToken implements Runnable {
             System.out.println("Exeption while creating connection: " + se);
             return;
         }
-        while (true) {
+        while (i < max) { // set this to while (true) -1, -2, -3, -4, -5 --> 1
             try {
                 // Insert in loop here
-                for (; i > 0; ++i) {
-                    st.executeUpdate(String.format(UtilStrings.apiOauthAccessToken, i));
+                for (; i < max; ++i) {
+                    st.executeUpdate(String.format(UtilStrings.apiSubUserPackages, i));
                     if (i % 1000 == 0) {
-                        System.out.println("Total rows written to api_oauth_access_token --> " + i);
+                        System.out.println("Total rows written to api_sub_user_packages --> " + i);
                     }
+                    /*
+                        if (i == max) { i = min; multiplier = -1 * multiplier; }
+                        int multiplier
+                    * */
                 }
             }
             catch (Exception e) {
-                System.out.println("Exception thrown in thread (" + endpoint[idx] + "): " + ApiOauthAccessToken.class.getName() + " --> " + e);
+                System.out.println("Exception thrown in thread (" + endpoint[idx] + "): " + ApiSubUserPackages.class.getName() + " --> " + e);
+
                 ++idx;
                 if (idx >= endpoint.length) {
                     idx = 0;

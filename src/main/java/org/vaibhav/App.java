@@ -1,6 +1,7 @@
 package org.vaibhav;
 
 import org.apache.ibatis.jdbc.ScriptRunner;
+import org.vaibhav.tables.*;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -56,7 +57,7 @@ public class App {
       System.exit(-2);
     }
 
-    int numThreads = 12;
+    int numThreads = 18;
     ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
     while (true) {
       try {
@@ -75,7 +76,14 @@ public class App {
         Future f4_1 = executorService.submit(new ApiSubRecurlyNotifyLog(args, 1, TEN_MILLION));
         Future f4_2 = executorService.submit(new ApiSubRecurlyNotifyLog(args, TEN_MILLION, 2*TEN_MILLION));
         Future f4_3 = executorService.submit(new ApiSubRecurlyNotifyLog(args, 2*TEN_MILLION, 3*TEN_MILLION));
-        
+
+        Future f5_1 = executorService.submit(new ApiSubUserPackages(args, 1, TEN_MILLION));
+        Future f5_2 = executorService.submit(new ApiSubUserPackages(args, TEN_MILLION, 2*TEN_MILLION));
+        Future f5_3 = executorService.submit(new ApiSubUserPackages(args, 2*TEN_MILLION, 3*TEN_MILLION));
+
+        Future f6_1 = executorService.submit(new ApiUserPartnerTransactionLog(args, 1, TEN_MILLION));
+        Future f6_2 = executorService.submit(new ApiUserPartnerTransactionLog(args, TEN_MILLION, 2*TEN_MILLION));
+        Future f6_3 = executorService.submit(new ApiUserPartnerTransactionLog(args, 2*TEN_MILLION, 3*TEN_MILLION));
 
         f1_1.get();
         f1_2.get();
@@ -93,6 +101,13 @@ public class App {
         f4_2.get();
         f4_3.get();
 
+        f5_1.get();
+        f5_2.get();
+        f5_3.get();
+
+        f6_1.get();
+        f6_2.get();
+        f6_3.get();
       } catch (Exception e) {
         System.out.println("Exception thrown in main application...");
       }

@@ -60,9 +60,49 @@ CREATE TABLE api_db_domestic.api_sub_apple_orig_transactions
 DROP TABLE IF EXISTS api_db_domestic.api_sub_recurly_notify_log CASCADE;
 CREATE TABLE api_db_domestic.api_sub_recurly_notify_log
 (
-  id             bigserial not null,
+  id             bigint not null,
   ingestdate     timestamptz,
   notification   varchar(255),
   subscriptionid varchar(255),
   userid         bigint
+) split into 40 tablets;
+
+DROP TABLE IF EXISTS api_db_domestic.api_sub_user_packages CASCADE;
+CREATE TABLE api_db_domestic.api_sub_user_packages
+(
+  id                                  bigint not null,
+  createddate                         timestamptz,
+  enddate                             timestamptz,
+  packagecode                         varchar(255),
+  pspmodifieddate                     timestamptz,
+  state                               bigint,
+  updateddate                         timestamptz,
+  userid                              bigint,
+  source                              varchar(255),
+  couponused                          varchar(255),
+  isstateactive                       bigint,
+  cbsproductcode                      varchar(255),
+  vendororiginalpurchasetransactionid varchar(255),
+  vendorsuppliedid                    varchar(255),
+  lastbillingvendorsynctimestamp      bigint,
+  expirationintent                    varchar(255),
+  renewstatus                         varchar(255),
+  retryvalue                          varchar(255),
+  cancelreason                        varchar(255),
+  product_region                      varchar(255),
+  startdate                           timestamptz,
+  vendorcode                          varchar(255)
+) split into 40 tablets;
+
+DROP TABLE IF EXISTS api_db_domestic.api_user_partner_transaction_log CASCADE;
+CREATE TABLE api_db_domestic.api_user_partner_transaction_log
+(
+  id                    bigint not null,
+  isoriginalpurchase    boolean,
+  json                  text,
+  originaltransactionid varchar(255),
+  partner               varchar(255),
+  transactionid         varchar(255),
+  transactiontype       bigint,
+  userid                bigint
 ) split into 40 tablets;
