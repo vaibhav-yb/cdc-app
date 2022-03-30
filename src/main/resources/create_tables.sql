@@ -4,7 +4,7 @@ CREATE SCHEMA api_db_domestic;
 DROP TABLE IF EXISTS api_db_domestic.api_apple_store_receipt_log CASCADE;
 CREATE TABLE api_db_domestic.api_apple_store_receipt_log
 (
-  id                        bigint not null,
+  id                        bigint PRIMARY KEY,
   appitemid                 varchar(255),
   bid                       varchar(255),
   bvrs                      varchar(255),
@@ -33,7 +33,7 @@ CREATE TABLE api_db_domestic.api_apple_store_receipt_log
 DROP TABLE IF EXISTS api_db_domestic.api_oauth_access_token CASCADE;
 CREATE TABLE api_db_domestic.api_oauth_access_token
 (
-  access_token_id        bigint not null,
+  access_token_id        bigint PRIMARY KEY,
   access_token           varchar(2048) not null,
   access_token_hashed    varchar(512) not null,
   additional_information varchar(1024),
@@ -49,7 +49,7 @@ CREATE TABLE api_db_domestic.api_oauth_access_token
 DROP TABLE IF EXISTS api_db_domestic.api_sub_apple_orig_transactions CASCADE;
 CREATE TABLE api_db_domestic.api_sub_apple_orig_transactions
 (
-  id                    bigint not null,
+  id                    bigint PRIMARY KEY,
   createddate           timestamptz,
   lastcheckeddate       timestamptz,
   originaltransactionid varchar(255),
@@ -60,7 +60,7 @@ CREATE TABLE api_db_domestic.api_sub_apple_orig_transactions
 DROP TABLE IF EXISTS api_db_domestic.api_sub_recurly_notify_log CASCADE;
 CREATE TABLE api_db_domestic.api_sub_recurly_notify_log
 (
-  id             bigint not null,
+  id             bigint PRIMARY KEY,
   ingestdate     timestamptz,
   notification   varchar(255),
   subscriptionid varchar(255),
@@ -70,7 +70,7 @@ CREATE TABLE api_db_domestic.api_sub_recurly_notify_log
 DROP TABLE IF EXISTS api_db_domestic.api_sub_user_packages CASCADE;
 CREATE TABLE api_db_domestic.api_sub_user_packages
 (
-  id                                  bigint not null,
+  id                                  bigint PRIMARY KEY,
   createddate                         timestamptz,
   enddate                             timestamptz,
   packagecode                         varchar(255),
@@ -97,7 +97,7 @@ CREATE TABLE api_db_domestic.api_sub_user_packages
 DROP TABLE IF EXISTS api_db_domestic.api_user_partner_transaction_log CASCADE;
 CREATE TABLE api_db_domestic.api_user_partner_transaction_log
 (
-  id                    bigint not null,
+  id                    bigint PRIMARY KEY,
   isoriginalpurchase    boolean,
   json                  text,
   originaltransactionid varchar(255),
@@ -110,7 +110,7 @@ CREATE TABLE api_db_domestic.api_user_partner_transaction_log
 DROP TABLE IF EXISTS api_db_domestic.api_user_device CASCADE;
 CREATE TABLE api_db_domestic.api_user_device
 (
-  id                bigint not null,
+  id                bigint PRIMARY KEY,
   activationcode    varchar(255),
   createddate       timestamptz,
   devicedescription varchar(255),
@@ -128,7 +128,7 @@ CREATE TABLE api_db_domestic.api_user_device
 DROP TABLE IF EXISTS api_db_domestic.api_watch_list CASCADE;
 CREATE TABLE api_db_domestic.api_watch_list
 (
-  id                      bigint not null,
+  id                      bigint PRIMARY KEY,
   userid                  bigint not null default '0',
   profileid               bigint not null default '0',
   externalid              varchar(255) not null,
@@ -140,7 +140,7 @@ CREATE TABLE api_db_domestic.api_watch_list
 DROP TABLE IF EXISTS api_db_domestic.user_attribute CASCADE;
 CREATE TABLE api_db_domestic.user_attribute
 (
-  userid                              bigint not null,
+  userid                              bigint PRIMARY KEY,
   lastshareddate                      timestamptz,
   optin                               boolean,
   opt_in_updated_date                 timestamptz,
@@ -156,4 +156,22 @@ CREATE TABLE api_db_domestic.user_attribute
   updateddate                         timestamptz,
   nfloptin                            boolean,
   nfloptindate                        timestamptz
+) split into 40 tablets;
+
+DROP TABLE IF EXISTS api_db_domestic.user_profile CASCADE;
+CREATE TABLE api_db_domestic.user_profile
+(
+  id              BIGINT PRIMARY KEY,
+  userid          bigint not null,
+  ismasterprofile bigint not null default '0',
+  profiletype     varchar(255),
+  orderid         bigint default '0',
+  name            varchar(255),
+  locale          varchar(255),
+  profilepic      varchar(255),
+  createdby       bigint,
+  createddate     timestamptz,
+  updatedby       bigint,
+  updateddate     timestamptz,
+  isdeleted       boolean default 'f'
 ) split into 40 tablets;
