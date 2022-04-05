@@ -66,16 +66,16 @@ public class App {
     ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
     while (true) {
       try {
-        Future f1_1 = executorService.submit(new IndefiniteUpdate(args, 1, 10000));
-        Future f1_2 = executorService.submit(new IndefiniteUpdate(args, 10001, 20000));
-        Future f1_3 = executorService.submit(new IndefiniteUpdate(args, 20001, 30000));
-        Future f1_4 = executorService.submit(new IndefiniteUpdate(args, 30001, 40000));
-        Future f1_5 = executorService.submit(new IndefiniteUpdate(args, 40001, 50000));
-        Future f1_6 = executorService.submit(new IndefiniteUpdate(args, 50001, 60000));
-        Future f1_7 = executorService.submit(new IndefiniteUpdate(args, 60001, 70000));
-        Future f1_8 = executorService.submit(new IndefiniteUpdate(args, 70001, 90000));
-        Future f1_9 = executorService.submit(new IndefiniteUpdate(args, 80001, 90000));
-        Future f1_10 = executorService.submit(new IndefiniteUpdate(args, 90001, 100000));
+        Future f1_1 = executorService.submit(new IndefiniteUpdate(args[0], 1, 10000));
+        Future f1_2 = executorService.submit(new IndefiniteUpdate(args[1], 10001, 20000));
+        Future f1_3 = executorService.submit(new IndefiniteUpdate(args[2], 20001, 30000));
+        Future f1_4 = executorService.submit(new IndefiniteUpdate(args[0], 30001, 40000));
+        Future f1_5 = executorService.submit(new IndefiniteUpdate(args[1], 40001, 50000));
+        Future f1_6 = executorService.submit(new IndefiniteUpdate(args[2], 50001, 60000));
+        Future f1_7 = executorService.submit(new IndefiniteUpdate(args[0], 60001, 70000));
+        Future f1_8 = executorService.submit(new IndefiniteUpdate(args[1], 70001, 90000));
+        Future f1_9 = executorService.submit(new IndefiniteUpdate(args[2], 80001, 90000));
+        Future f1_10 = executorService.submit(new IndefiniteUpdate(args[1], 90001, 100000));
 
         f1_1.get();
         f1_2.get();

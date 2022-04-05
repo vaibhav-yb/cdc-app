@@ -15,14 +15,14 @@ public class IndefiniteUpdate implements Runnable {
     long max;
     long valueForUpdate;
 
-    private String[] endpoint;
+    private String endpoint;
     private Connection conn;
     private Statement st;
 
 
 
-    public IndefiniteUpdate(String[] endpointArray, long min, long max) {
-        this.endpoint = endpointArray;
+    public IndefiniteUpdate(String endpoint, long min, long max) {
+        this.endpoint = endpoint;
         this.min = min;
         this.max = max;
         this.valueForUpdate = min;
@@ -30,7 +30,7 @@ public class IndefiniteUpdate implements Runnable {
 
     @Override public void run() {
         try {
-            conn = DriverManager.getConnection("jdbc:yugabytedb://" + endpoint[idx] + ":5433/yugabyte?" +
+            conn = DriverManager.getConnection("jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
                     "user=yugabyte&password=yugabyte");
             st = conn.createStatement();
         } catch (SQLException se) {
@@ -50,19 +50,19 @@ public class IndefiniteUpdate implements Runnable {
                 }
             }
             catch (Exception e) {
-                System.out.println("Exception thrown in thread (" + endpoint[idx] + "): " + IndefiniteUpdate.class.getName() + " --> " + e);
+                System.out.println("Exception thrown in thread (" + endpoint + "): " + IndefiniteUpdate.class.getName() + " --> " + e);
 
-                ++idx;
-                if (idx >= endpoint.length) {
-                    idx = 0;
-                }
+//                ++idx;
+//                if (idx >= endpoint.length) {
+//                    idx = 0;
+//                }
 
                 try {
                     st.close();
                     conn.close();
                     int tryCount = 0;
                     while (tryCount < 3){
-                        conn = DriverManager.getConnection("jdbc:yugabytedb://" + endpoint[idx] + ":5433/yugabyte?" +
+                        conn = DriverManager.getConnection("jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
                                 "user=yugabyte&password=yugabyte");
                         st = conn.createStatement();
                         tryCount++;
