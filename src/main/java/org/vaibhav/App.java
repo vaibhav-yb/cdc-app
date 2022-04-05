@@ -48,8 +48,13 @@ public class App {
     try {
       Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + args[0] + ":5433/yugabyte?" +
               "user=yugabyte&password=yugabyte");
-      runSqlScript(conn, "create_tables.sql");
-      System.out.println("Tables created, waiting for 5 seconds...");
+//      runSqlScript(conn, "create_tables.sql");
+      // CREATE TABLE test_app (k INT PRIMARY KEY, v INT);
+      // Insert one row in the table
+      Statement st = conn.createStatement();
+      st.executeUpdate("INSERT INTO test_app VALUES (1, 0);");
+      System.out.println("One row inserted, waiting for 5 seconds...");
+      st.close();
       conn.close();
       Thread.sleep(5000);
     } catch (Exception se) {
@@ -57,89 +62,32 @@ public class App {
       System.exit(-2);
     }
 
-    int numThreads = 18;
+    int numThreads = 10;
     ExecutorService executorService = Executors.newFixedThreadPool(numThreads);
     while (true) {
       try {
-        Future f1_1 = executorService.submit(new ApiAppleStoreReceiptLog(args, 1, TEN_MILLION));
-        Future f1_2 = executorService.submit(new ApiAppleStoreReceiptLog(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f1_3 = executorService.submit(new ApiAppleStoreReceiptLog(args, 2*TEN_MILLION, 3*TEN_MILLION));
-
-        Future f2_1 = executorService.submit(new ApiOauthAccessToken(args, 1, TEN_MILLION));
-        Future f2_2 = executorService.submit(new ApiOauthAccessToken(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f2_3 = executorService.submit(new ApiOauthAccessToken(args, 2*TEN_MILLION, 3*TEN_MILLION));
-        
-        Future f3_1 = executorService.submit(new ApiSubAppleOrigTransactions(args, 1, TEN_MILLION));
-        Future f3_2 = executorService.submit(new ApiSubAppleOrigTransactions(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f3_3 = executorService.submit(new ApiSubAppleOrigTransactions(args, 2*TEN_MILLION, 3*TEN_MILLION));
-
-        Future f4_1 = executorService.submit(new ApiSubRecurlyNotifyLog(args, 1, TEN_MILLION));
-        Future f4_2 = executorService.submit(new ApiSubRecurlyNotifyLog(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f4_3 = executorService.submit(new ApiSubRecurlyNotifyLog(args, 2*TEN_MILLION, 3*TEN_MILLION));
-
-        Future f5_1 = executorService.submit(new ApiSubUserPackages(args, 1, TEN_MILLION));
-        Future f5_2 = executorService.submit(new ApiSubUserPackages(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f5_3 = executorService.submit(new ApiSubUserPackages(args, 2*TEN_MILLION, 3*TEN_MILLION));
-
-        Future f6_1 = executorService.submit(new ApiUserPartnerTransactionLog(args, 1, TEN_MILLION));
-        Future f6_2 = executorService.submit(new ApiUserPartnerTransactionLog(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f6_3 = executorService.submit(new ApiUserPartnerTransactionLog(args, 2*TEN_MILLION, 3*TEN_MILLION));
-
-        Future f7_1 = executorService.submit(new ApiUserDevice(args, 1, TEN_MILLION));
-        Future f7_2 = executorService.submit(new ApiUserDevice(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f7_3 = executorService.submit(new ApiUserDevice(args, 2*TEN_MILLION, 3*TEN_MILLION));
-
-        Future f8_1 = executorService.submit(new ApiWatchList(args, 1, TEN_MILLION));
-        Future f8_2 = executorService.submit(new ApiWatchList(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f8_3 = executorService.submit(new ApiWatchList(args, 2*TEN_MILLION, 3*TEN_MILLION));
-
-        Future f9_1 = executorService.submit(new ApiWatchList(args, 1, TEN_MILLION));
-        Future f9_2 = executorService.submit(new ApiWatchList(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f9_3 = executorService.submit(new ApiWatchList(args, 2*TEN_MILLION, 3*TEN_MILLION));
-
-        Future f10_1 = executorService.submit(new ApiWatchList(args, 1, TEN_MILLION));
-        Future f10_2 = executorService.submit(new ApiWatchList(args, TEN_MILLION, 2*TEN_MILLION));
-        Future f10_3 = executorService.submit(new ApiWatchList(args, 2*TEN_MILLION, 3*TEN_MILLION));
+        Future f1_1 = executorService.submit(new IndefiniteUpdate(args, 1, 10000));
+        Future f1_2 = executorService.submit(new IndefiniteUpdate(args, 10001, 20000));
+        Future f1_3 = executorService.submit(new IndefiniteUpdate(args, 20001, 30000));
+        Future f1_4 = executorService.submit(new IndefiniteUpdate(args, 30001, 40000));
+        Future f1_5 = executorService.submit(new IndefiniteUpdate(args, 40001, 50000));
+        Future f1_6 = executorService.submit(new IndefiniteUpdate(args, 50001, 60000));
+        Future f1_7 = executorService.submit(new IndefiniteUpdate(args, 60001, 70000));
+        Future f1_8 = executorService.submit(new IndefiniteUpdate(args, 70001, 90000));
+        Future f1_9 = executorService.submit(new IndefiniteUpdate(args, 80001, 90000));
+        Future f1_10 = executorService.submit(new IndefiniteUpdate(args, 90001, 100000));
 
         f1_1.get();
         f1_2.get();
         f1_3.get();
+        f1_4.get();
+        f1_5.get();
+        f1_6.get();
+        f1_7.get();
+        f1_8.get();
+        f1_9.get();
+        f1_10.get();
 
-        f2_1.get();
-        f2_2.get();
-        f2_3.get();
-
-        f3_1.get();
-        f3_2.get();
-        f3_3.get();
-
-        f4_1.get();
-        f4_2.get();
-        f4_3.get();
-
-        f5_1.get();
-        f5_2.get();
-        f5_3.get();
-
-        f6_1.get();
-        f6_2.get();
-        f6_3.get();
-
-        f7_1.get();
-        f7_2.get();
-        f7_3.get();
-
-        f8_1.get();
-        f8_2.get();
-        f8_3.get();
-
-        f9_1.get();
-        f9_2.get();
-        f9_3.get();
-
-        f10_1.get();
-        f10_2.get();
-        f10_3.get();
       } catch (Exception e) {
         System.out.println("Exception thrown in main application...");
       }
