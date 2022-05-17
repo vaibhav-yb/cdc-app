@@ -15,7 +15,8 @@ public class App {
     Statement st = conn.createStatement();
     // set up the table if it doesn't exist
     boolean res = st.execute("create table if not exists test_cdc_app (id int primary key, " +
-      "name text default 'Vaibhav') split into 1 tablets;");
+      "name text default 'Vaibhav', a bigint default 12, b float default 12.34, vrchr varchar(20) default 'varchar_column')" +
+      " split into 10 tablets;");
     if (!res && firstTime) {
       // this means that the table is created
       System.out.println("Table created for the first time, waiting for 40s to let the " +
@@ -27,36 +28,42 @@ public class App {
     // make sure the table doesn't contain anything
     st.execute("delete from test_cdc_app;");
 
+    long startKey = 1;
+    long endKey = 0;
     while(true) {
-      // insert a thousand rows first
-      for (int i = 1; i <= 1000; ++i) {
-        int resInsert = st.executeUpdate("insert into test_cdc_app values (" + i + ");");
-        if (resInsert != 1) {
+      startKey = endKey + 1;
+      endKey = startKey + 511; // Total batch size would be 512
+      // insert rows first
+      for (int i = 1; i <= 1000; i = i + 0) { // Do not update i anywhere
+        int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
+        if (resInsert != 512) {
           throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
         }
       }
-      System.out.println("Insertion of 1000 rows complete...");
-      Thread.sleep(1000);
+      System.out.println("Inserts completed...");
+      Thread.sleep(200);
 
       // update the inserted rows
-      for (int i = 1; i <= 1000; ++i) {
-        int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id = " + i + ";");
+      for (int i = 1; i <= 1000; i = i + 0) {
+        int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id >= " + startKey + " and id <= " + endKey + ";");
         if (resUpdate != 1) {
           throw new RuntimeException("Unable to update rows, throwing exception and starting from scratch...");
         }
       }
-      System.out.println("Updation of 1000 rows complete...");
-      Thread.sleep(1000);
+      System.out.println("Update complete...");
+      Thread.sleep(200);
 
       // delete the inserted rows
+      
+      /*
       for (int i = 1; i <= 1000; ++i) {
         st.executeUpdate("delete from test_cdc_app where id = " + i + ";");
       }
       System.out.println("Deletion of 1000 rows complete...");
       Thread.sleep(1000);
-
+      */
       ++iterations;
-      System.out.println("Iteration count: " + iterations);
+      // System.out.println("Iteration count: " + iterations);
     }
   }
 
