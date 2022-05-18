@@ -14,6 +14,7 @@ public class App {
     Statement st = conn.createStatement();
     
     ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
+    rs.next();
 
     return rs.getLong(1);
   }
@@ -30,6 +31,8 @@ public class App {
     // Continue for a minute if count is not the same
     while ((System.currentTimeMillis() - start) < 60000 && countInMysql != countInYugabyte) {
       ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
+      rs.next();
+      
       countInMysql = rs.getLong(1);
     }
     
