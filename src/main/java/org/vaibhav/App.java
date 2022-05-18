@@ -2,13 +2,48 @@ package org.vaibhav;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.Statement;
 
 public class App {
   private static long iterations = 0;
   private static boolean firstTime = true;
 
-  private static void runWorkload(String endpoint) throws Exception {
+  private static long getCountOnYugabyte(String ybEndpoint) throws Exception {
+    Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
+    Statement st = conn.createStatement();
+    
+    ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
+
+    return rs.getLong(1);
+  }
+
+  private static void verifyCountOnMySql(String mysqlEndpoint, long countInYugabyte) throws Exception {
+    // Create connection
+    Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    Statement st = conn.createStatement();
+    
+    // Do a select count(*)
+    long countInMysql = 0;
+    long start = System.currentTimeMillis();
+
+    // Continue for a minute if count is not the same
+    while ((System.currentTimeMillis() - start) < 60000 && countInMysql != countInYugabyte) {
+      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
+      countInMysql = rs.getLong(1);
+    }
+    
+    if (countInMysql != countInYugabyte) {
+      System.out.println("Exiting the app because count is not equal");
+      System.out.println("Yugabyte: " + countInYugabyte + " MySql: " + countInMysql);
+
+      System.exit(-11);
+    } else {
+      System.out.println("Count in both source and sink equal");
+    }
+  }
+
+  private static void runWorkload(String endpoint, String mysqlEndpoint) throws Exception {
     String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
       "user=yugabyte&password=yugabyte";
     Connection conn = DriverManager.getConnection(ybUrl);
@@ -42,15 +77,22 @@ public class App {
       System.out.println("Inserts completed...");
       Thread.sleep(200);
 
+      long countInYb = getCountOnYugabyte(endpoint);
+
+      verifyCountOnMySql(mysqlEndpoint, countInYb);
+
       // update the inserted rows
-      if (true) {
-        int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id >= " + startKey + " and id <= " + endKey + ";");
-        if (resUpdate != 512) {
-          throw new RuntimeException("Unable to update rows, throwing exception and starting from scratch...");
-        }
-      }
-      System.out.println("Update complete...");
-      Thread.sleep(200);
+      // if (true) {
+      //   int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id >= " + startKey + " and id <= " + endKey + ";");
+      //   if (resUpdate != 512) {
+      //     throw new RuntimeException("Unable to update rows, throwing exception and starting from scratch...");
+      //   }
+      // }
+      // System.out.println("Update complete...");
+      // Thread.sleep(200);
+
+      // Write the logic for verification of the counts here.
+      // One connection to mysql and one to YB
 
       // delete the inserted rows
       
@@ -79,7 +121,8 @@ public class App {
     int index = 0;
     while (true) {
       try {
-        runWorkload(args[index]);
+        // We are assuming that the last index being passed is mysql's connection point
+        runWorkload(args[index], args[args.length - 1]);
       } catch (Exception e) {
         System.out.println("Exception caught: " + e);
         System.out.println("Trying again...");
