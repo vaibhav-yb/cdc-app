@@ -63,6 +63,7 @@ public class App {
       */
       ++iterations;
       System.out.println("Iteration count: " + iterations);
+      Thread.sleep(5000);
 
       startKey = endKey + 1;
     }
