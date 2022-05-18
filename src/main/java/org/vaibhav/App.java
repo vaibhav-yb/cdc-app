@@ -16,8 +16,7 @@ public class App {
     // set up the table if it doesn't exist
     boolean res = st.execute("create table if not exists test_cdc_app (id int primary key, " +
       "name text default 'Vaibhav', a bigint default 12, b float default 12.34, vrchr varchar(20) default 'varchar_column'," +
-      "dp double precision default 567.89)" +
-      " split into 10 tablets;");
+      "dp double precision default 567.89, user_id text default '1234abcde') split into 10 tablets;");
     if (!res && firstTime) {
       // this means that the table is created
       System.out.println("Table created for the first time, waiting for 20s to let the " +
