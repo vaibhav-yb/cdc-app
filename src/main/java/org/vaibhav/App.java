@@ -230,7 +230,7 @@ public class App {
         System.out.println("Exception caught: " + e);
         System.out.println("Trying again...");
         ++index;
-        if (index >= args.length) {
+        if (index >= args.length - 1) {
           index = 0;
         }
       }
