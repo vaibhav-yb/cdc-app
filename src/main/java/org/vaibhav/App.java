@@ -137,7 +137,17 @@ public class App {
       // insert rows first
       if (!insertCompleted){
         if (true) { // Do not update i anywhere
-          int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
+          st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + startKey + ", " + (startKey + 100) + "));");
+          st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + (startKey + 101) + ", " + (startKey + 250) + "));");
+          st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + (startKey + 251) + ", " + endKey + "));");
+
+          int[] insertBatchCount = st.executeBatch();
+          int resInsert = 0;
+          for (int cnt : insertBatchCount) {
+            resInsert += cnt;
+          }
+
+          // int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
           if (resInsert != 512) {
             throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
           }
@@ -150,6 +160,9 @@ public class App {
         verifyCountOnMySql(mysqlEndpoint, countInYb);
       }
       insertCompleted = true;
+
+      // Clear the batch after the inserts
+      st.clearBatch();
 
       // update the inserted rows
       if (!updateCompleted) {
@@ -174,6 +187,9 @@ public class App {
         Thread.sleep(200);
       }
       updateCompleted = true;
+
+      // clear the batch after updates
+      st.clearBatch();
 
       // delete the inserted rows
       
