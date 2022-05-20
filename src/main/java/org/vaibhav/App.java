@@ -12,6 +12,9 @@ public class App {
   private static boolean firstTime = true;
   private static long startMarker = 1;
 
+  // These flags are there to ensure that if the ybEndpoint the app is connected to, if it goes down
+  // and the app can continue connection to the other node then it resumes insertion from the point 
+  // where it threw the error
   private static boolean insertCompleted = false;
   private static boolean updateCompleted = false;
 
@@ -43,9 +46,6 @@ public class App {
 
       countInMysql = rs.getLong(1);
     }
-
-    st.close();
-    conn.close();
     
     if (countInMysql != countInYugabyte) {
       System.out.println("Exiting the app because count is not equal");
@@ -55,6 +55,9 @@ public class App {
     } else {
       System.out.println("Count in both source and sink equal");
     }
+
+    st.close();
+    conn.close();
   }
 
   private static void verifyCountOnMySqlAfterUpdate(String mysqlEndpoint, long countInYugabyte) throws Exception {
