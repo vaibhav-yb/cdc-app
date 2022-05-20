@@ -5,9 +5,15 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+
+// This app assumed that all the updates are going through on Yugabyte already
 public class App {
   private static long iterations = 0;
   private static boolean firstTime = true;
+  private static long startMarker = 1;
+
+  private static boolean insertCompleted = false;
+  private static boolean updateCompleted = false;
 
   private static long getCountOnYugabyte(String ybEndpoint) throws Exception {
     Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
@@ -16,6 +22,8 @@ public class App {
     ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
     rs.next();
 
+    st.close();
+    conn.close();
     return rs.getLong(1);
   }
 
@@ -32,9 +40,12 @@ public class App {
     while ((System.currentTimeMillis() - start) < 60000 && countInMysql != countInYugabyte) {
       ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
       rs.next();
-      
+
       countInMysql = rs.getLong(1);
     }
+
+    st.close();
+    conn.close();
     
     if (countInMysql != countInYugabyte) {
       System.out.println("Exiting the app because count is not equal");
@@ -44,6 +55,54 @@ public class App {
     } else {
       System.out.println("Count in both source and sink equal");
     }
+  }
+
+  private static void verifyCountOnMySqlAfterUpdate(String mysqlEndpoint, long countInYugabyte) throws Exception {
+    // Create connection
+    Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    Statement st = conn.createStatement();
+    
+    // Do a select count(*)
+    long countOfRowsWithOldName = 0;
+    long start = System.currentTimeMillis();
+
+    // Continue for a minute if count is not the same
+    while ((System.currentTimeMillis() - start) < 60000 && countOfRowsWithOldName != 0) {
+      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app WHERE name='Vaibhav';");
+      rs.next();
+
+      countOfRowsWithOldName = rs.getLong(1);
+    }
+
+    if (countOfRowsWithOldName != 0) {
+      System.out.println("Exiting the app because count of rows with old name is not zero");
+      System.out.println("Count of rows with old name: " + countOfRowsWithOldName);
+
+      System.exit(-11);
+    } else {
+      System.out.println("Row count with old name zero in both source and sink");
+    }
+
+    long countOfRowsWithNewName = 0;
+    long newStart = System.currentTimeMillis();
+    while ((System.currentTimeMillis() - newStart) < 60000 && countOfRowsWithNewName != countInYugabyte) {
+      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app WHERE name='VKVK';");
+      rs.next();
+
+      countOfRowsWithNewName = rs.getLong(1);
+    }
+    
+    if (countOfRowsWithNewName != countInYugabyte) {
+      System.out.println("Exiting the app because count of rows with new name is not equal");
+      System.out.println("Yugabyte: " + countInYugabyte + " MySql: " + countOfRowsWithNewName);
+
+      System.exit(-11);
+    } else {
+      System.out.println("Count of rows with new name in both source and sink equal");
+    }
+
+    st.close();
+    conn.close();
   }
 
   private static void runWorkload(String endpoint, String mysqlEndpoint) throws Exception {
@@ -66,36 +125,52 @@ public class App {
     // make sure the table doesn't contain anything
     st.execute("delete from test_cdc_app;");
 
-    long startKey = 1;
+    long startKey = startMarker;
     long endKey;
     while(true) {
       endKey = startKey + 511; // Total batch size would be 512
+
+      long countInYb = 0;
       // insert rows first
-      if (true) { // Do not update i anywhere
-        int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
-        if (resInsert != 512) {
-          throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
+      if (!insertCompleted){
+        if (true) { // Do not update i anywhere
+          int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
+          if (resInsert != 512) {
+            throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
+          }
         }
+        System.out.println("Inserts completed...");
+        Thread.sleep(200);
+
+        countInYb = getCountOnYugabyte(endpoint);
+
+        verifyCountOnMySql(mysqlEndpoint, countInYb);
       }
-      System.out.println("Inserts completed...");
-      Thread.sleep(200);
-
-      long countInYb = getCountOnYugabyte(endpoint);
-
-      verifyCountOnMySql(mysqlEndpoint, countInYb);
+      insertCompleted = true;
 
       // update the inserted rows
-      // if (true) {
-      //   int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id >= " + startKey + " and id <= " + endKey + ";");
-      //   if (resUpdate != 512) {
-      //     throw new RuntimeException("Unable to update rows, throwing exception and starting from scratch...");
-      //   }
-      // }
-      // System.out.println("Update complete...");
-      // Thread.sleep(200);
+      if (!updateCompleted) {
+        if (true) {
+          st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + startKey + " and id <= " + (startKey + 100) + ";");
+          st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + (startKey + 101) + " and id <= " + (startKey + 250) + ";");
+          st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + (startKey + 251) + " and id <= " + endKey + ";");
 
-      // Write the logic for verification of the counts here.
-      // One connection to mysql and one to YB
+          int[] batchUpdateCount = st.executeBatch();
+          int resUpdate = 0;
+          for (int cnt : batchUpdateCount) {
+            resUpdate += cnt;
+          }
+
+          // int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id >= " + startKey + " and id <= " + endKey + ";");
+          if (resUpdate != 512) {
+            throw new RuntimeException("Not all the rows are updated");
+          }
+        }
+        System.out.println("Update complete...");
+        verifyCountOnMySqlAfterUpdate(mysqlEndpoint, countInYb);
+        Thread.sleep(200);
+      }
+      updateCompleted = true;
 
       // delete the inserted rows
       
@@ -110,7 +185,13 @@ public class App {
       System.out.println("Iteration count: " + iterations);
       Thread.sleep(5000);
 
+      // mark the flags as false so that next iteration can take place
+      insertCompleted = false;
+      updateCompleted = false;
+
+      // update the keys to be inserted
       startKey = endKey + 1;
+      startMarker = startKey;
     }
   }
 
