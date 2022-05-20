@@ -25,8 +25,8 @@ public class App {
     ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
     rs.next();
 
-    st.close();
-    conn.close();
+    // st.close();
+    // conn.close();
     return rs.getLong(1);
   }
 
@@ -56,8 +56,8 @@ public class App {
       System.out.println("Count in both source and sink equal");
     }
 
-    st.close();
-    conn.close();
+    // st.close();
+    // conn.close();
   }
 
   private static void verifyCountOnMySqlAfterUpdate(String mysqlEndpoint, long countInYugabyte) throws Exception {
@@ -104,8 +104,8 @@ public class App {
       System.out.println("Count of rows with new name in both source and sink equal");
     }
 
-    st.close();
-    conn.close();
+    // st.close();
+    // conn.close();
   }
 
   private static void runWorkload(String endpoint, String mysqlEndpoint) throws Exception {
