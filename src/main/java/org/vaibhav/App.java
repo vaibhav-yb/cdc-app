@@ -153,13 +153,13 @@ public class App {
           }
         }
         System.out.println("Inserts completed...");
+        insertCompleted = true;
         Thread.sleep(200);
 
         countInYb = getCountOnYugabyte(endpoint);
 
         verifyCountOnMySql(mysqlEndpoint, countInYb);
       }
-      insertCompleted = true;
 
       // Clear the batch after the inserts
       st.clearBatch();
@@ -183,10 +183,10 @@ public class App {
           }
         }
         System.out.println("Update complete...");
+        updateCompleted = true;
         verifyCountOnMySqlAfterUpdate(mysqlEndpoint, countInYb);
         Thread.sleep(200);
       }
-      updateCompleted = true;
 
       // clear the batch after updates
       st.clearBatch();
