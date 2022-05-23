@@ -12,40 +12,41 @@ public class App {
   private static boolean firstTime = true;
   private static long startMarker = 1;
 
-  private static long UPDATE_BATCH_SIZE = 3;
-  private static long INSERT_BATCH_SIZE = 3;
+  // private static long UPDATE_BATCH_SIZE = 3;
+  // private static long INSERT_BATCH_SIZE = 3;
 
   // These flags are there to ensure that if the ybEndpoint the app is connected to, if it goes down
   // and the app can continue connection to the other node then it resumes insertion from the point 
   // where it threw the error
   private static boolean insertCompleted = false;
   private static boolean updateCompleted = false;
+  private static boolean deleteCompleted = false;
 
   private static void addBatchesToInsertStatement(Statement st, long startKey, long endKey) throws Exception {
     long i = startKey;
     while (i <= endKey) {
-      if (i + 2 > endKey) {
-        st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + i + ", " + endKey + "));");
-      } else {
-        st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + i + ", " + (i + INSERT_BATCH_SIZE - 1)  + "));");
-      }
-
-      // Move i one value ahead of the last inserted key so that the next iteration can add the relevant batch
-      i += INSERT_BATCH_SIZE;
+      // INSERT INTO test_cdc_app VALUES (i);
+      st.addBatch("INSERT INTO test_cdc_app VALUES (" + i + ");");
+      
+      ++i;
     }
   }
 
   private static void addBatchesToUpdateStatement(Statement st, long startKey, long endKey) throws Exception {
     long i = startKey;
     while (i <= endKey) {
-      if (i + 2 > endKey) {
-        st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + i + " and id <= " + endKey + ";");
-      } else {
-        st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + i + " and id <= " + (i + UPDATE_BATCH_SIZE - 1) + ";");
-      }
+      st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id = " + i + ";");
 
-      // Move i one value ahead of the last inserted key so that the next iteration can add the relevant batch
-      i += UPDATE_BATCH_SIZE;
+      ++i;
+    }
+  }
+
+  private static void addBatchesToDeleteStatement(Statement st, long startKey, long endKey) throws Exception {
+    long i = startKey;
+    while (i <= endKey) {
+      st.addBatch("DELETE FROM test_cdc_app where id = " + i + ";");
+
+      ++i;
     }
   }
   
@@ -220,13 +221,26 @@ public class App {
 
       // delete the inserted rows
       
-      /*
-      for (int i = 1; i <= 1000; ++i) {
-        st.executeUpdate("delete from test_cdc_app where id = " + i + ";");
+      if (!deleteCompleted) {
+        if (true) {
+          addBatchesToDeleteStatement(st, startKey, endKey);
+
+          int[] batchDeleteCount = st.executeBatch();
+          int resDelete = 0;
+          for (int cnt : batchDeleteCount) {
+            resDelete += cnt;
+          }
+
+          if (resDelete != 512) {
+            throw new RuntimeException("Not all the rows are deleted");
+          }
+        }
+        System.out.println("Delete complete...");
+        deleteCompleted = true;
+        // todo: add a function to verify that the deletes are taking place
+        Thread.sleep(200);
       }
-      System.out.println("Deletion of 1000 rows complete...");
-      Thread.sleep(1000);
-      */
+
       ++iterations;
       System.out.println("Iteration count: " + iterations);
       Thread.sleep(5000);
@@ -234,6 +248,7 @@ public class App {
       // mark the flags as false so that next iteration can take place
       insertCompleted = false;
       updateCompleted = false;
+      deleteCompleted = false;
 
       // update the keys to be inserted
       startKey = endKey + 1;
