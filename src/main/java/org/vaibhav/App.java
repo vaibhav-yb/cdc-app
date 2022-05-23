@@ -151,10 +151,10 @@ public class App {
       "dp double precision default 567.89, user_id text default '1234abcde') split into 10 tablets;");
     if (!res && firstTime) {
       // this means that the table is created
-      System.out.println("Table created for the first time, waiting for 20s to let the " +
+      System.out.println("Table created for the first time, waiting for 10s to let the " +
         "deployment happen");
       firstTime = false;
-      Thread.sleep(20000);
+      Thread.sleep(10000);
     }
 
     // make sure the table doesn't contain anything
