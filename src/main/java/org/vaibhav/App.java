@@ -98,7 +98,7 @@ public class App {
     Statement st = conn.createStatement();
     
     // Do a select count(*)
-    long countOfRowsWithOldName = 0;
+    long countOfRowsWithOldName = -1;
     long start = System.currentTimeMillis();
 
     // Continue for a minute if count is not the same
