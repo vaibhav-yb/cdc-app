@@ -12,12 +12,43 @@ public class App {
   private static boolean firstTime = true;
   private static long startMarker = 1;
 
+  private static long UPDATE_BATCH_SIZE = 3;
+  private static long INSERT_BATCH_SIZE = 3;
+
   // These flags are there to ensure that if the ybEndpoint the app is connected to, if it goes down
   // and the app can continue connection to the other node then it resumes insertion from the point 
   // where it threw the error
   private static boolean insertCompleted = false;
   private static boolean updateCompleted = false;
 
+  private static void addBatchesToInsertStatement(Statement st, long startKey, long endKey) throws Exception {
+    long i = startKey;
+    while (i <= endKey) {
+      if (i + 2 > endKey) {
+        st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + i + ", " + endKey + "));");
+      } else {
+        st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + i + ", " + (i + INSERT_BATCH_SIZE - 1)  + "));");
+      }
+
+      // Move i one value ahead of the last inserted key so that the next iteration can add the relevant batch
+      i += INSERT_BATCH_SIZE;
+    }
+  }
+
+  private static void addBatchesToUpdateStatement(Statement st, long startKey, long endKey) throws Exception {
+    long i = startKey;
+    while (i <= endKey) {
+      if (i + 2 > endKey) {
+        st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + i + " and id <= " + endKey + ";");
+      } else {
+        st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + i + " and id <= " + (i + UPDATE_BATCH_SIZE - 1) + ";");
+      }
+
+      // Move i one value ahead of the last inserted key so that the next iteration can add the relevant batch
+      i += UPDATE_BATCH_SIZE;
+    }
+  }
+  
   private static long getCountOnYugabyte(String ybEndpoint) throws Exception {
     Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
     Statement st = conn.createStatement();
@@ -137,9 +168,7 @@ public class App {
       // insert rows first
       if (!insertCompleted){
         if (true) { // Do not update i anywhere
-          st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + startKey + ", " + (startKey + 100) + "));");
-          st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + (startKey + 101) + ", " + (startKey + 250) + "));");
-          st.addBatch("INSERT INTO test_cdc_app VALUES (generate_series(" + (startKey + 251) + ", " + endKey + "));");
+          addBatchesToInsertStatement(st, startKey, endKey);
 
           int[] insertBatchCount = st.executeBatch();
           int resInsert = 0;
@@ -167,9 +196,7 @@ public class App {
       // update the inserted rows
       if (!updateCompleted) {
         if (true) {
-          st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + startKey + " and id <= " + (startKey + 100) + ";");
-          st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + (startKey + 101) + " and id <= " + (startKey + 250) + ";");
-          st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id >= " + (startKey + 251) + " and id <= " + endKey + ";");
+          addBatchesToUpdateStatement(st, startKey, endKey);
 
           int[] batchUpdateCount = st.executeBatch();
           int resUpdate = 0;
