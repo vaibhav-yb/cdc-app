@@ -81,9 +81,7 @@ public class App {
       
       ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + ";");
       rs.next();
-
-      st.close();
-      conn.close();
+      
       return rs.getLong(1);
     } catch (Exception e) {
       throw e;
