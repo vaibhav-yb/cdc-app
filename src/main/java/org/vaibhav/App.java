@@ -5,6 +5,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 
 // This app assumed that all the updates are going through on Yugabyte already
 public class App {
@@ -13,15 +16,32 @@ public class App {
   private static long startMarker = 1;
 
   private static String TABLE_NAME = "";
-  // private static long UPDATE_BATCH_SIZE = 3;
-  // private static long INSERT_BATCH_SIZE = 3;
 
   // These flags are there to ensure that if the ybEndpoint the app is connected to, if it goes down
   // and the app can continue connection to the other node then it resumes insertion from the point 
   // where it threw the error
   private static boolean insertCompleted = false;
-  private static boolean updateCompleted = false;
-  private static boolean deleteCompleted = false;
+
+  private static HikariDataSource ybDataSource;
+  private static HikariDataSource mysqlDataSource;
+
+  private static void initializeYugabyteDataSource(String ybEndpoint) throws Exception {
+    HikariConfig config = new HikariConfig();
+
+    config.setJdbcUrl("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
+    config.setMaximumPoolSize(5);
+    
+    ybDataSource = new HikariDataSource(config);
+  }
+
+  private static void initializeMySqlDataSource(String mysqlEndpoint) throws Exception {
+    HikariConfig config = new HikariConfig();
+
+    config.setJdbcUrl("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    config.setMaximumPoolSize(5);
+
+    mysqlDataSource = new HikariDataSource(config);
+  }
 
   private static void addBatchesToInsertStatement(Statement st, long startKey, long endKey) throws Exception {
     long i = startKey;
@@ -32,27 +52,10 @@ public class App {
       ++i;
     }
   }
-
-  private static void addBatchesToUpdateStatement(Statement st, long startKey, long endKey) throws Exception {
-    long i = startKey;
-    while (i <= endKey) {
-      st.addBatch("UPDATE " + TABLE_NAME + " SET name='VKVK' where id = " + i + ";");
-
-      ++i;
-    }
-  }
-
-  private static void addBatchesToDeleteStatement(Statement st, long startKey, long endKey) throws Exception {
-    long i = startKey;
-    while (i <= endKey) {
-      st.addBatch("DELETE FROM " + TABLE_NAME + " where id = " + i + ";");
-
-      ++i;
-    }
-  }
   
   private static long getCountOnYugabyte(String ybEndpoint) throws Exception {
-    Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
+    // Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
+    Connection conn = ybDataSource.getConnection();
     Statement st = conn.createStatement();
     
     ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + ";");
@@ -65,7 +68,8 @@ public class App {
 
   private static void verifyCountOnMySql(String mysqlEndpoint, long countInYugabyte) throws Exception {
     // Create connection
-    Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    // Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    Connection conn = mysqlDataSource.getConnection();
     Statement st = conn.createStatement();
     
     // Do a select count(*)
@@ -88,63 +92,13 @@ public class App {
     } else {
       System.out.println("Count in both source and sink equal");
     }
-
-    // st.close();
-    // conn.close();
-  }
-
-  private static void verifyCountOnMySqlAfterUpdate(String mysqlEndpoint, long countInYugabyte) throws Exception {
-    // Create connection
-    Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
-    Statement st = conn.createStatement();
-    
-    // Do a select count(*)
-    long countOfRowsWithOldName = -1;
-    long start = System.currentTimeMillis();
-
-    // Continue for a minute if count is not the same
-    while ((System.currentTimeMillis() - start) < 60000 && countOfRowsWithOldName != 0) {
-      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + " WHERE name='Vaibhav';");
-      rs.next();
-
-      countOfRowsWithOldName = rs.getLong(1);
-    }
-
-    if (countOfRowsWithOldName != 0) {
-      System.out.println("Exiting the app because count of rows with old name is not zero");
-      System.out.println("Count of rows with old name: " + countOfRowsWithOldName);
-
-      System.exit(-11);
-    } else {
-      System.out.println("Row count with old name zero in both source and sink");
-    }
-
-    long countOfRowsWithNewName = 0;
-    long newStart = System.currentTimeMillis();
-    while ((System.currentTimeMillis() - newStart) < 60000 && countOfRowsWithNewName != countInYugabyte) {
-      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + " WHERE name='VKVK';");
-      rs.next();
-
-      countOfRowsWithNewName = rs.getLong(1);
-    }
-    
-    if (countOfRowsWithNewName != countInYugabyte) {
-      System.out.println("Exiting the app because count of rows with new name is not equal");
-      System.out.println("Yugabyte: " + countInYugabyte + " MySql: " + countOfRowsWithNewName);
-
-      System.exit(-11);
-    } else {
-      System.out.println("Count of rows with new name in both source and sink equal");
-    }
-
-    // st.close();
-    // conn.close();
   }
 
   private static void runWorkload(String endpoint, String mysqlEndpoint, String tableName) throws Exception {
-    String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
-      "user=yugabyte&password=yugabyte";
-    Connection conn = DriverManager.getConnection(ybUrl);
+    initializeYugabyteDataSource(endpoint /* yugabyte endpoint */);
+    initializeMySqlDataSource(mysqlEndpoint);
+
+    Connection conn = ybDataSource.getConnection();
     Statement st = conn.createStatement();
     TABLE_NAME = tableName;
     // set up the table if it doesn't exist
@@ -196,61 +150,12 @@ public class App {
       // Clear the batch after the inserts
       st.clearBatch();
 
-      // update the inserted rows
-      if (!updateCompleted) {
-        if (true) {
-          addBatchesToUpdateStatement(st, startKey, endKey);
-
-          int[] batchUpdateCount = st.executeBatch();
-          int resUpdate = 0;
-          for (int cnt : batchUpdateCount) {
-            resUpdate += cnt;
-          }
-
-          // int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id >= " + startKey + " and id <= " + endKey + ";");
-          if (resUpdate != 512) {
-            throw new RuntimeException("Not all the rows are updated");
-          }
-        }
-        System.out.println("Update complete...");
-        updateCompleted = true;
-        verifyCountOnMySqlAfterUpdate(mysqlEndpoint, countInYb);
-        Thread.sleep(200);
-      }
-
-      // clear the batch after updates
-      st.clearBatch();
-
-      // delete the inserted rows
-      
-      if (!deleteCompleted) {
-        if (true) {
-          addBatchesToDeleteStatement(st, startKey, endKey);
-
-          int[] batchDeleteCount = st.executeBatch();
-          int resDelete = 0;
-          for (int cnt : batchDeleteCount) {
-            resDelete += cnt;
-          }
-
-          if (resDelete != 512) {
-            throw new RuntimeException("Not all the rows are deleted");
-          }
-        }
-        System.out.println("Delete complete...");
-        deleteCompleted = true;
-        // todo: add a function to verify that the deletes are taking place
-        Thread.sleep(200);
-      }
-
       ++iterations;
       System.out.println("Iteration count: " + iterations);
       Thread.sleep(5000);
 
       // mark the flags as false so that next iteration can take place
       insertCompleted = false;
-      updateCompleted = false;
-      deleteCompleted = false;
 
       // update the keys to be inserted
       startKey = endKey + 1;
