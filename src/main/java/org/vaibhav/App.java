@@ -28,7 +28,7 @@ public class App {
     HikariConfig config = new HikariConfig();
 
     config.setJdbcUrl("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
-    config.setMaximumPoolSize(5);
+    config.setMaximumPoolSize(2);
     
     ybDataSource = new HikariDataSource(config);
   }
@@ -37,7 +37,7 @@ public class App {
     HikariConfig config = new HikariConfig();
 
     config.setJdbcUrl("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
-    config.setMaximumPoolSize(5);
+    config.setMaximumPoolSize(2);
 
     mysqlDataSource = new HikariDataSource(config);
   }
