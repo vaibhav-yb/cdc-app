@@ -12,6 +12,7 @@ public class App {
   private static boolean firstTime = true;
   private static long startMarker = 1;
 
+  private static String TABLE_NAME = "";
   // private static long UPDATE_BATCH_SIZE = 3;
   // private static long INSERT_BATCH_SIZE = 3;
 
@@ -26,7 +27,7 @@ public class App {
     long i = startKey;
     while (i <= endKey) {
       // INSERT INTO test_cdc_app VALUES (i);
-      st.addBatch("INSERT INTO test_cdc_app VALUES (" + i + ");");
+      st.addBatch("INSERT INTO " + TABLE_NAME + " VALUES (" + i + ");");
       
       ++i;
     }
@@ -35,7 +36,7 @@ public class App {
   private static void addBatchesToUpdateStatement(Statement st, long startKey, long endKey) throws Exception {
     long i = startKey;
     while (i <= endKey) {
-      st.addBatch("UPDATE test_cdc_app SET name='VKVK' where id = " + i + ";");
+      st.addBatch("UPDATE " + TABLE_NAME + " SET name='VKVK' where id = " + i + ";");
 
       ++i;
     }
@@ -44,7 +45,7 @@ public class App {
   private static void addBatchesToDeleteStatement(Statement st, long startKey, long endKey) throws Exception {
     long i = startKey;
     while (i <= endKey) {
-      st.addBatch("DELETE FROM test_cdc_app where id = " + i + ";");
+      st.addBatch("DELETE FROM " + TABLE_NAME + " where id = " + i + ";");
 
       ++i;
     }
@@ -54,7 +55,7 @@ public class App {
     Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
     Statement st = conn.createStatement();
     
-    ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
+    ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + ";");
     rs.next();
 
     // st.close();
@@ -73,7 +74,7 @@ public class App {
 
     // Continue for a minute if count is not the same
     while ((System.currentTimeMillis() - start) < 60000 && countInMysql != countInYugabyte) {
-      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app;");
+      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + ";");
       rs.next();
 
       countInMysql = rs.getLong(1);
@@ -103,7 +104,7 @@ public class App {
 
     // Continue for a minute if count is not the same
     while ((System.currentTimeMillis() - start) < 60000 && countOfRowsWithOldName != 0) {
-      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app WHERE name='Vaibhav';");
+      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + " WHERE name='Vaibhav';");
       rs.next();
 
       countOfRowsWithOldName = rs.getLong(1);
@@ -121,7 +122,7 @@ public class App {
     long countOfRowsWithNewName = 0;
     long newStart = System.currentTimeMillis();
     while ((System.currentTimeMillis() - newStart) < 60000 && countOfRowsWithNewName != countInYugabyte) {
-      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM test_cdc_app WHERE name='VKVK';");
+      ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + " WHERE name='VKVK';");
       rs.next();
 
       countOfRowsWithNewName = rs.getLong(1);
@@ -140,13 +141,14 @@ public class App {
     // conn.close();
   }
 
-  private static void runWorkload(String endpoint, String mysqlEndpoint) throws Exception {
+  private static void runWorkload(String endpoint, String mysqlEndpoint, String tableName) throws Exception {
     String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
       "user=yugabyte&password=yugabyte";
     Connection conn = DriverManager.getConnection(ybUrl);
     Statement st = conn.createStatement();
+    TABLE_NAME = tableName;
     // set up the table if it doesn't exist
-    boolean res = st.execute("create table if not exists test_cdc_app (id int primary key, " +
+    boolean res = st.execute("create table if not exists " + TABLE_NAME + " (id int primary key, " +
       "name text default 'Vaibhav', a bigint default 12, b float default 12.34, vrchr varchar(20) default 'varchar_column'," +
       "dp double precision default 567.89, user_id text default '1234abcde') split into 10 tablets;");
     if (!res && firstTime) {
@@ -263,17 +265,18 @@ public class App {
       System.exit(-1);
     }
 
-    int index = 0;
+    int index = 1;
     while (true) {
       try {
         // We are assuming that the last index being passed is mysql's connection point
-        runWorkload(args[index], args[args.length - 1]);
+        // and the first is a table name
+        runWorkload(args[index], args[args.length - 1], args[0]);
       } catch (Exception e) {
         System.out.println("Exception caught: " + e);
         System.out.println("Trying again...");
         ++index;
         if (index >= args.length - 1) {
-          index = 0;
+          index = 1;
         }
       }
     }
