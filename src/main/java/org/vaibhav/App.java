@@ -5,6 +5,9 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 
 // This app assumed that all the updates are going through on Yugabyte already
 public class App {
@@ -22,6 +25,27 @@ public class App {
   private static boolean insertCompleted = false;
   private static boolean updateCompleted = false;
   private static boolean deleteCompleted = false;
+
+  private static HikariDataSource ybDataSource;
+  private static HikariDataSource mysqlDataSource;
+
+  private static void initializeYugabyteDataSource(String ybEndpoint) throws Exception {
+    HikariConfig config = new HikariConfig();
+
+    config.setJdbcUrl("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
+    config.setMaximumPoolSize(5);
+    
+    ybDataSource = new HikariDataSource(config);
+  }
+
+  private static void initializeMySqlDataSource(String mysqlEndpoint) throws Exception {
+    HikariConfig config = new HikariConfig();
+
+    config.setJdbcUrl("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    config.setMaximumPoolSize(5);
+
+    mysqlDataSource = new HikariDataSource(config);
+  }
 
   private static void addBatchesToInsertStatement(Statement st, long startKey, long endKey) throws Exception {
     long i = startKey;
@@ -52,7 +76,8 @@ public class App {
   }
   
   private static long getCountOnYugabyte(String ybEndpoint) throws Exception {
-    Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
+    // Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
+    Connection conn = ybDataSource.getConnection();
     Statement st = conn.createStatement();
     
     ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + ";");
@@ -65,7 +90,8 @@ public class App {
 
   private static void verifyCountOnMySql(String mysqlEndpoint, long countInYugabyte) throws Exception {
     // Create connection
-    Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    // Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    Connection conn = mysqlDataSource.getConnection();
     Statement st = conn.createStatement();
     
     // Do a select count(*)
@@ -95,7 +121,8 @@ public class App {
 
   private static void verifyCountOnMySqlAfterUpdate(String mysqlEndpoint, long countInYugabyte) throws Exception {
     // Create connection
-    Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    // Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    Connection conn = mysqlDataSource.getConnection();
     Statement st = conn.createStatement();
     
     // Do a select count(*)
@@ -142,9 +169,12 @@ public class App {
   }
 
   private static void runWorkload(String endpoint, String mysqlEndpoint, String tableName) throws Exception {
-    String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
-      "user=yugabyte&password=yugabyte";
-    Connection conn = DriverManager.getConnection(ybUrl);
+    initializeYugabyteDataSource(endpoint);
+    initializeMySqlDataSource(mysqlEndpoint);
+
+    // String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
+    //   "user=yugabyte&password=yugabyte";
+    Connection conn = ybDataSource.getConnection();
     Statement st = conn.createStatement();
     TABLE_NAME = tableName;
     // set up the table if it doesn't exist
