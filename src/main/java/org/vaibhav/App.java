@@ -122,9 +122,11 @@ public class App {
       while(true) {
         endKey = startKey + 511; // Total batch size would be 512
 
+        
         long countInYb = 0;
         // insert rows first
 
+        System.out.println("Start Key: " + startKey + " End key: " + endKey);
         addBatchesToInsertStatement(st, startKey, endKey);
 
         int[] insertBatchCount = st.executeBatch();
