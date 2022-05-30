@@ -23,8 +23,8 @@ public class App {
   private boolean updateCompleted = false;
   private boolean deleteCompleted = false;
 
-  private HikariDataSource ybDataSource;
-  private HikariDataSource mysqlDataSource;
+  private HikariDataSource ybDataSource = new HikariDataSource();
+  private HikariDataSource mysqlDataSource = new HikariDataSource();
 
   private void initializeYugabyteDataSource(String ybEndpoint) throws Exception {
     HikariConfig config = new HikariConfig();
