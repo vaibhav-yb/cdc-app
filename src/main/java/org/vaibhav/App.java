@@ -197,7 +197,7 @@ public class App {
 
       while(true) {
         System.out.println("Start key: " + startKey + " End key: " + endKey);
-        
+
         long countInYb = 0;
         // insert rows first
         if (!insertCompleted){
