@@ -288,6 +288,8 @@ public class App {
         endKey = startKey + 511;
       }
     } catch(Exception e) {
+      e.printStackTrace();
+      endKey = startKey + 511;
       throw e;
     }
   }
