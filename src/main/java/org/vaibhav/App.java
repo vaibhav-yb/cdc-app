@@ -15,8 +15,8 @@ public class App {
 
   private static String TABLE_NAME = "";
 
-  private HikariDataSource ybDataSource;
-  private HikariDataSource mysqlDataSource;
+  private HikariDataSource ybDataSource = new HikariDataSource();
+  private HikariDataSource mysqlDataSource = new HikariDataSource();
 
   private void initializeYugabyteDataSource(String ybEndpoint) throws Exception {
     HikariConfig config = new HikariConfig();
@@ -44,9 +44,9 @@ public class App {
     mysqlDataSource = new HikariDataSource(config);
   }
 
-  private void addBatchesToInsertStatement(Statement st, long startKey, long endKey) throws Exception {
-    long i = startKey;
-    while (i <= endKey) {
+  private void addBatchesToInsertStatement(Statement st, long start, long end) throws Exception {
+    long i = start;
+    while (i <= end) {
       // INSERT INTO test_cdc_app VALUES (i);
       st.addBatch("INSERT INTO " + TABLE_NAME + " VALUES (" + i + ");");
       
