@@ -3,6 +3,9 @@ package org.vaibhav;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -13,6 +16,7 @@ public class App {
   private long iterations = 0;
   private boolean firstTime = true;
   private long startKey = 1;
+  private long END_KEY;
 
   private static String TABLE_NAME = "";
 
@@ -25,6 +29,13 @@ public class App {
 
   private HikariDataSource ybDataSource;
   private HikariDataSource mysqlDataSource;
+
+  public App(long startKey, long endKey) {
+    super();
+
+    this.startKey = startKey;
+    this.END_KEY = endKey;
+  }
 
   private void initializeYugabyteDataSource(String ybEndpoint) throws Exception {
     HikariConfig config = new HikariConfig();
@@ -176,8 +187,6 @@ public class App {
     initializeYugabyteDataSource(endpoint);
     initializeMySqlDataSource(mysqlEndpoint);
 
-    // String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
-    //   "user=yugabyte&password=yugabyte";
     try (Connection conn = ybDataSource.getConnection()) {
       Statement st = conn.createStatement();
       TABLE_NAME = tableName;
@@ -193,10 +202,8 @@ public class App {
         Thread.sleep(10000);
       }
 
-      long endKey;
-      while(true) {
-        endKey = startKey + 511; // Total batch size would be 512
-
+      long endKey = startKey + 511; // Total batch size would be 512
+      while(endKey <= END_KEY) {
         long countInYb = 0;
         // insert rows first
         if (!insertCompleted){
@@ -284,34 +291,68 @@ public class App {
 
         // update the keys to be inserted
         startKey = endKey + 1;
+        endKey = startKey + 511; // Total batch size would be 512
       }
     } catch(Exception e) {
       throw e;
     }
   }
 
+  private static class ThreadedApp implements Runnable {
+    private App cdcApp;
+
+    private String[] argsFromCmdLine;
+
+    public ThreadedApp(String[] args, long startKey, long endKey) {
+      argsFromCmdLine = args;
+
+      cdcApp = new App(startKey, endKey);
+    }
+
+    @Override
+    public void run() {
+      int index = 1;
+      while (true) {
+        try {
+          // We are assuming that the last index being passed is mysql's connection point
+          // and the first is a table name
+          cdcApp.runWorkload(argsFromCmdLine[index], argsFromCmdLine[argsFromCmdLine.length - 1], argsFromCmdLine[0]);
+        } catch (Exception e) {
+          System.out.println("Exception caught: " + e);
+          System.out.println("Trying again...");
+          ++index;
+          if (index >= argsFromCmdLine.length - 1) {
+            index = 1;
+          }
+        }
+      }
+    }
+  }
+
   public static void main(String[] args) {
-    App cdcApp = new App();
     // args will contain the endpoints
     if (args.length == 0) {
       System.out.println("No endpoints specified to connect to, exiting...");
       System.exit(-1);
     }
 
-    int index = 1;
-    while (true) {
-      try {
-        // We are assuming that the last index being passed is mysql's connection point
-        // and the first is a table name
-        cdcApp.runWorkload(args[index], args[args.length - 1], args[0]);
-      } catch (Exception e) {
-        System.out.println("Exception caught: " + e);
-        System.out.println("Trying again...");
-        ++index;
-        if (index >= args.length - 1) {
-          index = 1;
-        }
-      }
+    ExecutorService executor = Executors.newFixedThreadPool(5);
+    
+    try {
+      Future<?> f1 = executor.submit(new ThreadedApp(args, 1, 1000000));
+      Future<?> f2 = executor.submit(new ThreadedApp(args, 1000001, 2000000));
+      Future<?> f3 = executor.submit(new ThreadedApp(args, 2000001, 3000000));
+      Future<?> f4 = executor.submit(new ThreadedApp(args, 3000001, 4000000));
+      Future<?> f5 = executor.submit(new ThreadedApp(args, 4000001, 5000000));
+
+      f1.get();
+      f2.get();
+      f3.get();
+      f4.get();
+      f5.get();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
+
   }
 }
