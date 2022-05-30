@@ -103,7 +103,7 @@ public class App {
     initializeYugabyteDataSource(endpoint /* yugabyte endpoint */);
     initializeMySqlDataSource(mysqlEndpoint);
 
-    long endKey;
+    long endKey = startKey + 511;
     try (Connection conn = ybDataSource.getConnection()) {
       Statement st = conn.createStatement();
       TABLE_NAME = tableName;
@@ -120,8 +120,6 @@ public class App {
       }
 
       while(true) {
-        endKey = startKey + 511; // Total batch size would be 512
-
         long countInYb = 0;
         // insert rows first
 
@@ -154,6 +152,7 @@ public class App {
 
         // update the keys to be inserted
         startKey = endKey + 1;
+        endKey = startKey + 511;
       }
     } catch (Exception e) {
       e.printStackTrace();
