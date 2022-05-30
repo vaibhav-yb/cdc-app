@@ -52,9 +52,9 @@ public class App {
     mysqlDataSource = new HikariDataSource(config);
   }
 
-  private void addBatchesToInsertStatement(Statement st, long startKey, long endKey) throws Exception {
-    long i = startKey;
-    while (i <= endKey) {
+  private void addBatchesToInsertStatement(Statement st, long start, long end) throws Exception {
+    long i = start;
+    while (i <= end) {
       // INSERT INTO test_cdc_app VALUES (i);
       st.addBatch("INSERT INTO " + TABLE_NAME + " VALUES (" + i + ");");
       
@@ -62,18 +62,18 @@ public class App {
     }
   }
 
-  private void addBatchesToUpdateStatement(Statement st, long startKey, long endKey) throws Exception {
-    long i = startKey;
-    while (i <= endKey) {
+  private void addBatchesToUpdateStatement(Statement st, long start, long end) throws Exception {
+    long i = start;
+    while (i <= end) {
       st.addBatch("UPDATE " + TABLE_NAME + " SET name='VKVK' where id = " + i + ";");
 
       ++i;
     }
   }
 
-  private void addBatchesToDeleteStatement(Statement st, long startKey, long endKey) throws Exception {
-    long i = startKey;
-    while (i <= endKey) {
+  private void addBatchesToDeleteStatement(Statement st, long start, long end) throws Exception {
+    long i = start;
+    while (i <= end) {
       st.addBatch("DELETE FROM " + TABLE_NAME + " where id = " + i + ";");
 
       ++i;
