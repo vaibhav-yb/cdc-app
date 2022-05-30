@@ -176,6 +176,8 @@ public class App {
     initializeYugabyteDataSource(endpoint);
     initializeMySqlDataSource(mysqlEndpoint);
 
+    long endKey = startKey + 511;
+
     // String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
     //   "user=yugabyte&password=yugabyte";
     try (Connection conn = ybDataSource.getConnection()) {
@@ -193,10 +195,9 @@ public class App {
         Thread.sleep(10000);
       }
 
-      long endKey;
       while(true) {
-        endKey = startKey + 511; // Total batch size would be 512
-
+        System.out.println("Start key: " + startKey + " End key: " + endKey);
+        
         long countInYb = 0;
         // insert rows first
         if (!insertCompleted){
@@ -284,6 +285,7 @@ public class App {
 
         // update the keys to be inserted
         startKey = endKey + 1;
+        endKey = startKey + 511;
       }
     } catch(Exception e) {
       throw e;
