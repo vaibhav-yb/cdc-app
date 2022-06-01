@@ -101,7 +101,9 @@ public class App {
     initializeMySql1DataSource(mysql1Endpoint /* mysql1 endpoint */);
     initializeMySql2DataSource(mysql2Endpoint);
 
-    long endKey = startKey + 511;
+    final long BATCH_SIZE = 1024;
+
+    long endKey = startKey + BATCH_SIZE - 1;
     try (Connection conn = mysql1DataSource.getConnection()) {
       Statement st = conn.createStatement();
       TABLE_NAME = tableName;
@@ -131,7 +133,7 @@ public class App {
         }
 
         // int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
-        if (resInsert != 512) {
+        if (resInsert != BATCH_SIZE) {
           throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
         }
         System.out.println("Inserts completed...");
