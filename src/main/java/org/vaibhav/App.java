@@ -21,7 +21,9 @@ public class App {
     HikariConfig config = new HikariConfig();
 
     System.out.println("Initializing mysql1 pool with endpoint: " + mysql1Endpoint);
-    config.setJdbcUrl("jdbc:mysql://" + mysql1Endpoint + ":3306/api_db_domestic?user=replicant&password=replicant#123&sslMode=required");
+    config.setJdbcUrl("jdbc:mysql://" + mysql1Endpoint + ":3306/api_db_domestic?sslMode=required");
+    config.setUsername("replicant");
+    config.setPassword("replicant#123");
     config.setMaximumPoolSize(2);
 
     if (!mysql1DataSource.isClosed()) {
