@@ -52,7 +52,7 @@ public class App {
     long i = start;
     while (i <= end) {
       // INSERT INTO test_cdc_app VALUES (i);
-      st.addBatch("INSERT INTO " + TABLE_NAME + " VALUES (" + i + ");");
+      st.addBatch("INSERT INTO " + TABLE_NAME + "(id) VALUES (" + i + ");");
       
       ++i;
     }
