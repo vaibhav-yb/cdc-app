@@ -113,8 +113,8 @@ public class App {
       TABLE_NAME = tableName;
       // set up the table if it doesn't exist
       boolean res = st.execute("create table if not exists " + TABLE_NAME + " (id int primary key, " +
-        "name text default 'Vaibhav', a bigint default 12, b double default 12.34, vrchr varchar(20) default 'varchar_column'," +
-        "dp double default 567.89, user_id text default '1234abcde');");
+        "name varchar(20) default 'Vaibhav', a bigint default 12, b double default 12.34, vrchr varchar(20) default 'varchar_column'," +
+        "dp double default 567.89, user_id varchar(25) default '1234abcde');");
       if (!res && firstTime) {
         // this means that the table is created
         System.out.println("Table created for the first time, waiting for 10s to let the " +
