@@ -7,7 +7,6 @@ import java.sql.Statement;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-// This app assumed that all the updates are going through on Yugabyte already
 public class App {
   private long iterations = 0;
   private boolean firstTime = true;
@@ -21,6 +20,7 @@ public class App {
   private void initializeMySql1DataSource(String mysql1Endpoint) throws Exception {
     HikariConfig config = new HikariConfig();
 
+    System.out.println("Initializing mysql1 pool with endpoint: " + mysql1Endpoint);
     config.setJdbcUrl("jdbc:mysql://" + mysql1Endpoint + ":3306/api_db_domestic?user=replicant&password=replicant#123&sslMode=required");
     config.setMaximumPoolSize(2);
 
@@ -33,6 +33,8 @@ public class App {
 
   private void initializeMySql2DataSource(String mysql2Endpoint) throws Exception {
     HikariConfig config = new HikariConfig();
+
+    System.out.println("Initializing mysql2 pool with endpoint: " + mysql2Endpoint);
 
     config.setJdbcUrl("jdbc:mysql://" + mysql2Endpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
     config.setMaximumPoolSize(2);
@@ -118,6 +120,8 @@ public class App {
         firstTime = false;
         Thread.sleep(10000);
       }
+
+      System.out.println("Starting workload...");
 
       while(true) {
         long countInMysql1 = 0;
