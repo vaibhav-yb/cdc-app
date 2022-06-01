@@ -15,33 +15,33 @@ public class App {
 
   private static String TABLE_NAME = "";
 
-  private HikariDataSource ybDataSource = new HikariDataSource();
-  private HikariDataSource mysqlDataSource = new HikariDataSource();
+  private HikariDataSource mysql1DataSource = new HikariDataSource();
+  private HikariDataSource mysql2DataSource = new HikariDataSource();
 
-  private void initializeYugabyteDataSource(String ybEndpoint) throws Exception {
+  private void initializeMySql1DataSource(String mysql1Endpoint) throws Exception {
     HikariConfig config = new HikariConfig();
 
-    config.setJdbcUrl("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
+    config.setJdbcUrl("jdbc:mysql://" + mysql1Endpoint + ":3306/api_db_domestic?user=replicant&password=replicant#123&sslMode=required");
     config.setMaximumPoolSize(2);
 
-    if (!ybDataSource.isClosed()) {
-      ybDataSource.close();    
+    if (!mysql1DataSource.isClosed()) {
+      mysql1DataSource.close();    
     }
 
-    ybDataSource = new HikariDataSource(config);
+    mysql1DataSource = new HikariDataSource(config);
   }
 
-  private void initializeMySqlDataSource(String mysqlEndpoint) throws Exception {
+  private void initializeMySql2DataSource(String mysql2Endpoint) throws Exception {
     HikariConfig config = new HikariConfig();
 
-    config.setJdbcUrl("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
+    config.setJdbcUrl("jdbc:mysql://" + mysql2Endpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
     config.setMaximumPoolSize(2);
 
-    if (!mysqlDataSource.isClosed()) {
-      mysqlDataSource.close();
+    if (!mysql2DataSource.isClosed()) {
+      mysql2DataSource.close();
     }
 
-    mysqlDataSource = new HikariDataSource(config);
+    mysql2DataSource = new HikariDataSource(config);
   }
 
   private void addBatchesToInsertStatement(Statement st, long start, long end) throws Exception {
@@ -54,9 +54,8 @@ public class App {
     }
   }
   
-  private long getCountOnYugabyte(String ybEndpoint) throws Exception {
-    // Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
-    try (Connection conn = ybDataSource.getConnection()){
+  private long getCountOnMysql1(String mysql1Endpoint) throws Exception {
+    try (Connection conn = mysql1DataSource.getConnection()){
       Statement st = conn.createStatement();
       
       ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + ";");
@@ -68,49 +67,48 @@ public class App {
     }
   }
 
-  private void verifyCountOnMySql(String mysqlEndpoint, long countInYugabyte) throws Exception {
-    // Create connection
-    // Connection conn = DriverManager.getConnection("jdbc:mysql://" + mysqlEndpoint + ":3306/test_api?user=mysqluser&password=mysqlpw&sslMode=required");
-    try (Connection conn = mysqlDataSource.getConnection()) {
+  private void verifyCountOnMySql2(String mysql2Endpoint, long countInMysql1) throws Exception {
+    try (Connection conn = mysql2DataSource.getConnection()) {
       Statement st = conn.createStatement();
       
       // Do a select count(*)
-      long countInMysql = 0;
+      long countInMysql2 = 0;
       long start = System.currentTimeMillis();
 
+      long WAIT_TIME_MS = 120000; // 2 minutes
       // Continue for a minute if count is not the same
-      while ((System.currentTimeMillis() - start) < 60000 && countInMysql != countInYugabyte) {
+      while ((System.currentTimeMillis() - start) < WAIT_TIME_MS && countInMysql2 != countInMysql1) {
         ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM " + TABLE_NAME + ";");
         rs.next();
 
-        countInMysql = rs.getLong(1);
+        countInMysql2 = rs.getLong(1);
       }
       
-      if (countInMysql != countInYugabyte) {
+      if (countInMysql1 != countInMysql2) {
         System.out.println("Exiting the app because count is not equal");
-        System.out.println("Yugabyte: " + countInYugabyte + " MySql: " + countInMysql);
+        System.out.println("MySql1: " + countInMysql1 + " MySql2: " + countInMysql2);
 
         System.exit(-11);
       } else {
-        System.out.println("Count in both source and sink equal");
+        System.out.println("Count in both mysql1 and mysql2 equal");
       }
     } catch (Exception e) {
       throw e;
     }
   }
 
-  private void runWorkload(String endpoint, String mysqlEndpoint, String tableName) throws Exception {
-    initializeYugabyteDataSource(endpoint /* yugabyte endpoint */);
-    initializeMySqlDataSource(mysqlEndpoint);
+  private void runWorkload(String mysql1Endpoint, String mysql2Endpoint, String tableName) throws Exception {
+    initializeMySql1DataSource(mysql1Endpoint /* mysql1 endpoint */);
+    initializeMySql2DataSource(mysql2Endpoint);
 
     long endKey = startKey + 511;
-    try (Connection conn = ybDataSource.getConnection()) {
+    try (Connection conn = mysql1DataSource.getConnection()) {
       Statement st = conn.createStatement();
       TABLE_NAME = tableName;
       // set up the table if it doesn't exist
       boolean res = st.execute("create table if not exists " + TABLE_NAME + " (id int primary key, " +
-        "name text default 'Vaibhav', a bigint default 12, b float default 12.34, vrchr varchar(20) default 'varchar_column'," +
-        "dp double precision default 567.89, user_id text default '1234abcde') split into 10 tablets;");
+        "name text default 'Vaibhav', a bigint default 12, b double default 12.34, vrchr varchar(20) default 'varchar_column'," +
+        "dp double default 567.89, user_id text default '1234abcde');");
       if (!res && firstTime) {
         // this means that the table is created
         System.out.println("Table created for the first time, waiting for 10s to let the " +
@@ -120,7 +118,7 @@ public class App {
       }
 
       while(true) {
-        long countInYb = 0;
+        long countInMysql1 = 0;
         // insert rows first
 
         System.out.println("Start Key: " + startKey + " End key: " + endKey);
@@ -139,10 +137,9 @@ public class App {
         System.out.println("Inserts completed...");
         Thread.sleep(200);
 
-        countInYb = getCountOnYugabyte(endpoint);
+        countInMysql1 = getCountOnMysql1(mysql1Endpoint);
 
-        verifyCountOnMySql(mysqlEndpoint, countInYb);
-
+        verifyCountOnMySql2(mysql2Endpoint, countInMysql1);
         // Clear the batch after the inserts
         st.clearBatch();
 
@@ -172,8 +169,8 @@ public class App {
     int index = 1;
     while (true) {
       try {
-        // We are assuming that the last index being passed is mysql's connection point
-        // and the first is a table name
+        // We are assuming that the last index being passed is mysql 2's connection point
+        // and the first is a table name, the second will be the mysql1's endpoint
 
         cdcApp.runWorkload(args[index], args[args.length - 1], args[0]);
       } catch (Exception e) {
