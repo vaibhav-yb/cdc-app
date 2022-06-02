@@ -134,7 +134,7 @@ public class App {
         }
 
         // int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
-        if (resInsert != 512) {
+        if (resInsert != BATCH_SIZE) {
           throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
         }
         System.out.println("Inserts completed...");
@@ -153,7 +153,7 @@ public class App {
 
         // update the keys to be inserted
         startKey = endKey + 1;
-        endKey = startKey + 511;
+        endKey = startKey + BATCH_SIZE - 1;
       }
     } catch (Exception e) {
       e.printStackTrace();
