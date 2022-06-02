@@ -9,6 +9,7 @@ import com.zaxxer.hikari.HikariDataSource;
 
 // This app assumed that all the updates are going through on Yugabyte already
 public class App {
+  private final long BATCH_SIZE = 2048;
   private long iterations = 0;
   private boolean firstTime = true;
   private long startKey = 1;
@@ -103,7 +104,7 @@ public class App {
     initializeYugabyteDataSource(endpoint /* yugabyte endpoint */);
     initializeMySqlDataSource(mysqlEndpoint);
 
-    long endKey = startKey + 511;
+    long endKey = startKey + BATCH_SIZE - 1;
     try (Connection conn = ybDataSource.getConnection()) {
       Statement st = conn.createStatement();
       TABLE_NAME = tableName;
