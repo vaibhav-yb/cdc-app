@@ -54,6 +54,21 @@ public class App {
       ++i;
     }
   }
+
+  private void insertInWal(Statement st, long start, long end) throws Exception {
+    long i = start;
+    long counter = 0;
+    while (i <= end) {
+      int j = st.executeUpdate("INSERT INTO " + TABLE_NAME + " VALUES (" + i + ");");
+      
+      counter += j;
+      ++i;
+    }
+
+    if (counter != (end - start + 1)) {
+      throw new Exception("Insertion in WAL failed, trying again...");
+    }
+  }
   
   private long getCountOnYugabyte(String ybEndpoint) throws Exception {
     // Connection conn = DriverManager.getConnection("jdbc:yugabytedb://" + ybEndpoint + ":5433/yugabyte?user=yugabyte&password=yugabyte");
@@ -104,6 +119,8 @@ public class App {
     initializeYugabyteDataSource(endpoint /* yugabyte endpoint */);
     initializeMySqlDataSource(mysqlEndpoint);
 
+    boolean shouldInsertInWal = false;
+
     long endKey = startKey + BATCH_SIZE - 1;
     try (Connection conn = ybDataSource.getConnection()) {
       Statement st = conn.createStatement();
@@ -125,17 +142,21 @@ public class App {
         // insert rows first
 
         System.out.println("Start Key: " + startKey + " End key: " + endKey);
-        addBatchesToInsertStatement(st, startKey, endKey);
+        if (!shouldInsertInWal) {
+          addBatchesToInsertStatement(st, startKey, endKey);
 
-        int[] insertBatchCount = st.executeBatch();
-        int resInsert = 0;
-        for (int cnt : insertBatchCount) {
-          resInsert += cnt;
-        }
+          int[] insertBatchCount = st.executeBatch();
+          int resInsert = 0;
+          for (int cnt : insertBatchCount) {
+            resInsert += cnt;
+          }
 
-        // int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
-        if (resInsert != BATCH_SIZE) {
-          throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
+          // int resInsert = st.executeUpdate("insert into test_cdc_app(id) values (generate_series(" + startKey + "," + endKey + "));");
+          if (resInsert != BATCH_SIZE) {
+            throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
+          }
+        } else {
+          insertInWal(st, startKey, endKey);
         }
         System.out.println("Inserts completed...");
         Thread.sleep(200);
