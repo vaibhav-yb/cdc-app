@@ -175,6 +175,9 @@ public class App {
         // update the keys to be inserted
         startKey = endKey + 1;
         endKey = startKey + BATCH_SIZE - 1;
+
+        // change the flag so that the next set of inserts should be in a different fashion
+        shouldInsertInWal = !shouldInsertInWal;
       }
     } catch (Exception e) {
       e.printStackTrace();
