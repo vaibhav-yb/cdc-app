@@ -10,45 +10,53 @@ public class App {
   private static boolean insertCompleted = false;
 
   private static void runWorkload(String endpoint) throws Exception {
-    String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
-      "user=yugabyte&password=yugabyte";
-    Connection conn = DriverManager.getConnection(ybUrl);
-    Statement st = conn.createStatement();
-    // set up the table if it doesn't exist
-    boolean res = st.execute("create table if not exists test (id int primary key, " +
-      "name text, nm numeric default 12.34);");
+    String ybUrl = "jdbc:postgresql://" + endpoint + ":5432/postgres?" +
+      "user=postgres&password=postgres";
+    try (Connection conn = DriverManager.getConnection(ybUrl)) {
+      Statement st = conn.createStatement();
+      // set up the table if it doesn't exist
+      boolean res = st.execute("CREATE TABLE IF NOT EXISTS test_table (id INT PRIMARY KEY, name TEXT DEFAULT 'some_default_value', single_dim int[] default '{1,2,3}');");
 
-    if (!res && firstTime) {
-      // this means that the table is created
-      System.out.println("Table created for the first time, waiting for 40s to let the " +
-        "deployment happen");
-      firstTime = false;
-      Thread.sleep(40000);
+      if (!res && firstTime) {
+        // this means that the table is created
+        System.out.println("Table created for the first time, waiting for 20s to let the " +
+          "deployment happen");
+        firstTime = false;
+        Thread.sleep(20000);
+      } 
+    } catch (Exception e) {
+      throw e;
     }
 
     // make sure the table doesn't contain anything
-    st.execute("delete from test;");
+    // st.execute("delete from test_table;");
 
     long numOfRows = -1;
 
     while(true) {
       if (!insertCompleted) {
         // insert a thousand rows first
-        for (int i = counter; i >= numOfRows; ++i, ++counter) {
-          // We won't come out of this loop unless there is an exception
-          int resInsert = st.executeUpdate("insert into test values (" + i + ", 'Vaibhav');");
-          if (resInsert != 1) {
-            throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
+        try (Connection conn = DriverManager.getConnection(ybUrl)) {
+          Statement st = conn.createStatement();
+          for (int i = counter; i >= numOfRows; ++i, ++counter) {
+            // We won't come out of this loop unless there is an exception
+            int resInsert = st.executeUpdate("insert into test_table values (" + i + ");");
+            if (resInsert != 1) {
+              throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
+            }
+  
+            if (counter % 1000 == 0) {
+              System.out.println("Inserted 1000 more rows, total: " + counter);
+            }
           }
-
-          if (counter % 1000 == 0) {
-            System.out.println("Inserted 1000 more rows, total: " + counter);
-          }
+          
+        } catch (Exception e) {
+          throw e;
         }
 
 //        insertCompleted = true;
 //        counter = 1;
-        Thread.sleep(300);
+        Thread.sleep(100);
       }
 
       ++iterations;
