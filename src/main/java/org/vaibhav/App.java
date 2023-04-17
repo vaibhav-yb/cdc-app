@@ -3,60 +3,96 @@ package org.vaibhav;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 
 public class App {
   private static long iterations = 0;
-  private static boolean firstTime = true;
 
   private static void runWorkload(String endpoint) throws Exception {
     String ybUrl = "jdbc:yugabytedb://" + endpoint + ":5433/yugabyte?" +
       "user=yugabyte&password=yugabyte";
     Connection conn = DriverManager.getConnection(ybUrl);
     Statement st = conn.createStatement();
-    // set up the table if it doesn't exist
-    boolean res = st.execute("create table if not exists test_cdc_app (id int primary key, " +
-      "name text default 'Vaibhav') split into 1 tablets;");
-    if (!res && firstTime) {
-      // this means that the table is created
-      System.out.println("Table created for the first time, waiting for 40s to let the " +
-        "deployment happen");
-      firstTime = false;
-      Thread.sleep(40000);
-    }
 
-    // make sure the table doesn't contain anything
-    st.execute("delete from test_cdc_app;");
+    /*
+      CREATE TABLE department (id INT PRIMARY KEY, dept_name TEXT);
+      CREATE TABLE employee (id INT PRIMARY KEY, emp_name TEXT, d_id INT, FOREIGN KEY (d_id) REFERENCES department(id));
+      CREATE TABLE contract (id INT PRIMARY KEY, contract_name TEXT, c_id INT, FOREIGN KEY (c_id) REFERENCES employee(id));
+      CREATE TABLE address (id INT PRIMARY KEY, area_name TEXT, a_id INT, FOREIGN KEY (a_id) REFERENCES contract(id));
+      CREATE TABLE locality (id INT PRIMARY KEY, loc_name TEXT, l_id INT, FOREIGN KEY (l_id) REFERENCES address(id));
+     */
 
     while(true) {
-      // insert a thousand rows first
-      for (int i = 1; i <= 1000; ++i) {
-        int resInsert = st.executeUpdate("insert into test_cdc_app values (" + i + ");");
-        if (resInsert != 1) {
-          throw new RuntimeException("Unable to insert more rows, trying from scratch again...");
-        }
-      }
-      System.out.println("Insertion of 1000 rows complete...");
-      Thread.sleep(1000);
-
-      // update the inserted rows
-      for (int i = 1; i <= 1000; ++i) {
-        int resUpdate = st.executeUpdate("update test_cdc_app set name = 'VKVK' where id = " + i + ";");
-        if (resUpdate != 1) {
-          throw new RuntimeException("Unable to update rows, throwing exception and starting from scratch...");
-        }
-      }
-      System.out.println("Updation of 1000 rows complete...");
-      Thread.sleep(1000);
-
-      // delete the inserted rows
-      for (int i = 1; i <= 1000; ++i) {
-        st.executeUpdate("delete from test_cdc_app where id = " + i + ";");
-      }
-      System.out.println("Deletion of 1000 rows complete...");
-      Thread.sleep(1000);
-
       ++iterations;
-      System.out.println("Iteration count: " + iterations);
+      System.out.println("Starting iteration " + iterations);
+      // If this test needs to be run more for higher duration, this scale factor can be changed
+      // accordingly.
+      final int scaleFactor = 1;
+      final int iterations = 5 * scaleFactor;
+      int departmentId = 1;
+      int employeeId = 1, employeeBatchSize = 5 * scaleFactor;
+      int contractId = 1, contractBatchSize = 6 * scaleFactor;
+      int addressId = 1, addressBatchSize = 7 * scaleFactor;
+      int localityId = 1, localityBatchSize = 8 * scaleFactor;
+
+      // Lists to store the expected indices of the elements of respective tables in the final
+      // list of messages we will be receiving after streaming.
+//      List<Integer> departmentIndices = new ArrayList<>();
+//      List<Integer> employeeIndices = new ArrayList<>();
+//      List<Integer> contractIndices = new ArrayList<>();
+//      List<Integer> addressIndices = new ArrayList<>();
+//      List<Integer> localityIndices = new ArrayList<>();
+
+      for (long i = 0; ; ++i) {
+        long totalCount = 0;
+        st.execute(String.format("INSERT INTO department VALUES (%d, 'my department no %d');", departmentId, departmentId));
+
+        // Inserting the index of the record for department table at its appropriate position.
+//        departmentIndices.add((int) totalCount);
+        ++totalCount;
+
+        for (int j = employeeId; j <= employeeId + employeeBatchSize - 1; ++j) {
+          System.out.println("inserting into employee with id " + j);
+          st.execute(String.format("BEGIN; INSERT INTO employee VALUES (%d, 'emp no %d', %d); COMMIT;", j, j, departmentId));
+//          employeeIndices.add((int) totalCount);
+          ++totalCount;
+          for (int k = contractId; k <= contractId + contractBatchSize - 1; ++k) {
+            System.out.println("inserting into contract with id " + k);
+            st.execute(String.format("BEGIN; INSERT INTO contract VALUES (%d, 'contract no %d', %d); COMMIT;", k, k, j /* employee fKey */));
+//            contractIndices.add((int) totalCount);
+            ++totalCount;
+
+            for (int l = addressId; l <= addressId + addressBatchSize - 1; ++l) {
+              System.out.println("inserting into address with id " + l);
+              st.execute(String.format("BEGIN; INSERT INTO address VALUES (%d, 'address no %d', %d); COMMIT;", l, l, k /* contract fKey */));
+//              addressIndices.add((int) totalCount);
+              ++totalCount;
+
+              for (int m = localityId; m <= localityId + localityBatchSize - 1; ++m) {
+                System.out.println("inserting into locality with id " + m);
+                st.execute(String.format("BEGIN; INSERT INTO locality VALUES (%d, 'locality no %d', %d); COMMIT;", m, m, l /* address fKey */));
+//                localityIndices.add((int) totalCount);
+                ++totalCount;
+              }
+              // Increment localityId for next iteration.
+              localityId += localityBatchSize;
+            }
+            // Increment addressId for next iteration.
+            addressId += addressBatchSize;
+          }
+          // Increment contractId for next iteration.
+          contractId += contractBatchSize;
+        }
+
+        // Increment employeeId for the next iteration
+        employeeId += employeeBatchSize;
+
+        // Increment department ID for more iterations
+        ++departmentId;
+
+        System.out.println("Total records inserted in iteration " + iterations + ": " + totalCount);
+      }
     }
   }
 
